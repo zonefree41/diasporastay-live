@@ -17,7 +17,17 @@ mongoose.connect(process.env.MONGO_URI)
     .catch(err => console.error("MongoDB Error:", err));
 
 // Regular middlewares
-app.use(cors());
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://diasporastay.vercel.app", // or your deployed frontend
+];
+
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true,
+}));
+
 app.use(express.json());
 
 // ✅ Create Checkout Session
@@ -25,6 +35,11 @@ app.post("/api/create-checkout-session", async (req, res) => {
     try {
         const { hotel, nights, guests, email } = req.body;
         const total = hotel.price * nights;
+
+        const YOUR_DOMAIN =
+            process.env.NODE_ENV === "production"
+                ? "https://diasporastay.vercel.app"
+                : "http://localhost:5173";
 
         // Create checkout session
         const session = await stripe.checkout.sessions.create({
@@ -86,6 +101,7 @@ app.post(
     async (req, res) => {
         const sig = req.headers["stripe-signature"];
         let event;
+        app.use(express.json());
 
         try {
             event = stripe.webhooks.constructEvent(
