@@ -1,52 +1,61 @@
-import { useMemo, useState } from 'react'
-import { HOTELS } from '../data/hotels'
-import HotelCard from '../components/HotelCard'
+import { Link } from "react-router-dom"
 
+const hotels = [
+    {
+        id: 1,
+        name: "Addis Skyline Hotel",
+        city: "Addis Ababa, Ethiopia",
+        price: 120,
+        image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1000",
+    },
+    {
+        id: 2,
+        name: "Accra Beach Resort",
+        city: "Accra, Ghana",
+        price: 150,
+        image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1000",
+    },
+    {
+        id: 3,
+        name: "Nairobi Garden Suites",
+        city: "Nairobi, Kenya",
+        price: 95,
+        image: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1000",
+    },
+    {
+        id: 4,
+        name: "Cape Town Heritage Lodge",
+        city: "Cape Town, South Africa",
+        price: 180,
+        image: "https://images.unsplash.com/photo-1615874959474-d609969a20ed?q=80&w=1000",
+    },
+]
 
 export default function Explore() {
-    const [q, setQ] = useState('')
-    const [min, setMin] = useState('')
-    const [max, setMax] = useState('')
-
-
-    const results = useMemo(() => {
-        return HOTELS.filter(h => {
-            const matchQ = q ? (h.name + h.city + h.country + h.tags.join(' ')).toLowerCase().includes(q.toLowerCase()) : true
-            const matchMin = min ? h.price >= Number(min) : true
-            const matchMax = max ? h.price <= Number(max) : true
-            return matchQ && matchMin && matchMax
-        })
-    }, [q, min, max])
-
-
     return (
-        <div className="container py-4">
-            <div className="bg-white border rounded-3 p-3 mb-4">
-                <div className="row g-2 align-items-end">
-                    <div className="col-md-6">
-                        <label className="form-label">Search</label>
-                        <input className="form-control" placeholder="City, hotel, feature..." value={q} onChange={e => setQ(e.target.value)} />
+        <div className="container py-5">
+            <h2 className="fw-bold text-center mb-5">Explore Diaspora Stays</h2>
+            <div className="row g-4">
+                {hotels.map((hotel) => (
+                    <div className="col-md-6 col-lg-3" key={hotel.id}>
+                        <div className="card h-100 shadow-sm border-0">
+                            <img
+                                src={hotel.image}
+                                alt={hotel.name}
+                                className="card-img-top"
+                                style={{ height: "200px", objectFit: "cover" }}
+                            />
+                            <div className="card-body">
+                                <h5 className="card-title">{hotel.name}</h5>
+                                <p className="text-muted mb-1">{hotel.city}</p>
+                                <p className="fw-bold">${hotel.price} / night</p>
+                                <Link to={`/checkout?hotel=${hotel.id}`} className="btn btn-primary w-100">
+                                    Reserve
+                                </Link>
+                            </div>
+                        </div>
                     </div>
-                    <div className="col-md-2">
-                        <label className="form-label">Min $</label>
-                        <input type="number" className="form-control" value={min} onChange={e => setMin(e.target.value)} />
-                    </div>
-                    <div className="col-md-2">
-                        <label className="form-label">Max $</label>
-                        <input type="number" className="form-control" value={max} onChange={e => setMax(e.target.value)} />
-                    </div>
-                    <div className="col-md-2 text-md-end">
-                        <button className="btn btn-outline-secondary w-100" onClick={() => { setQ(''); setMin(''); setMax('') }}>Reset</button>
-                    </div>
-                </div>
-            </div>
-
-
-            <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-                {results.map(h => <HotelCard key={h.id} hotel={h} />)}
-                {results.length === 0 && (
-                    <div className="col"><div className="alert alert-secondary">No results. Try broadening your search.</div></div>
-                )}
+                ))}
             </div>
         </div>
     )
