@@ -6,7 +6,6 @@ import Explore from './pages/Explore'
 import Hotel from './pages/Hotel'
 import Checkout from './pages/Checkout'
 import MyBookings from './pages/MyBookings'
-import Success from './pages/Success.jsx';
 
 
 import Success from './pages/Success'
