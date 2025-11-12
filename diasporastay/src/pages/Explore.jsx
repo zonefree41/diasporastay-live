@@ -3,21 +3,27 @@ import { HOTELS } from "../data/hotels";
 
 export default function Explore() {
     const [selectedCountry, setSelectedCountry] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
 
-    // Get unique country list dynamically
+    // Unique country list for dropdown
     const countries = [...new Set(HOTELS.map(h => h.country))];
 
-    // Filtered hotel list
-    const filteredHotels = selectedCountry
-        ? HOTELS.filter(h => h.country === selectedCountry)
-        : HOTELS;
+    // Filter hotels by country + search term
+    const filteredHotels = HOTELS.filter((h) => {
+        const matchesCountry = selectedCountry ? h.country === selectedCountry : true;
+        const matchesSearch =
+            h.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            h.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            h.country.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCountry && matchesSearch;
+    });
 
     return (
         <div className="container py-5">
             <h2 className="fw-bold text-center mb-4">Explore Stays</h2>
 
-            {/* Filter dropdown */}
-            <div className="d-flex justify-content-center mb-4">
+            {/* Filter and Search Controls */}
+            <div className="d-flex flex-wrap justify-content-center gap-3 mb-4">
                 <select
                     className="form-select w-auto"
                     value={selectedCountry}
@@ -30,9 +36,18 @@ export default function Explore() {
                         </option>
                     ))}
                 </select>
+
+                <input
+                    type="text"
+                    className="form-control w-auto"
+                    style={{ minWidth: "250px" }}
+                    placeholder="🔍 Search by city or hotel..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
 
-            {/* Hotel list */}
+            {/* Hotel Cards */}
             <div className="row">
                 {filteredHotels.map((hotel) => (
                     <div className="col-md-4 mb-4" key={hotel.id}>
@@ -48,9 +63,7 @@ export default function Explore() {
                                 <p className="text-muted mb-1">
                                     {hotel.city}, {hotel.country} {hotel.flag}
                                 </p>
-                                <p className="fw-semibold text-primary">
-                                    ${hotel.price} / night
-                                </p>
+                                <p className="fw-semibold text-primary">${hotel.price} / night</p>
                                 <a
                                     href={`/hotel/${hotel.id}`}
                                     className="btn btn-outline-primary w-100"
@@ -66,7 +79,7 @@ export default function Explore() {
             {/* No results message */}
             {filteredHotels.length === 0 && (
                 <p className="text-center text-muted mt-4">
-                    No hotels found for this country.
+                    No hotels found. Try another search.
                 </p>
             )}
         </div>

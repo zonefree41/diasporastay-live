@@ -135,3 +135,16 @@ select.form-select {
 select.form-select:hover {
   border-color: #0d6efd;
 }
+
+input.form-control,
+select.form-select {
+  border-radius: 30px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+}
+
+input.form-control:focus,
+select.form-select:focus {
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, .25);
+  border-color: #0d6efd;
+}
