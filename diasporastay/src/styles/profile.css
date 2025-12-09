@@ -1,0 +1,57 @@
+.profile-container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 25px;
+    background: #111;
+    border: 1px solid #D4AF37;
+    border-radius: 12px;
+    color: white;
+}
+
+.profile-title {
+    text-align: center;
+    color: #D4AF37;
+    margin-bottom: 20px;
+}
+
+.profile-form label {
+    font-weight: bold;
+    margin-top: 12px;
+    color: #FFD700;
+}
+
+.profile-form input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border-radius: 8px;
+    border: 1px solid #555;
+    background: #222;
+    color: white;
+}
+
+.save-btn {
+    margin-top: 25px;
+    width: 100%;
+    background: #D4AF37;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    color: black;
+    cursor: pointer;
+}
+
+.success-box {
+    background: #0f0;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+}
+
+.error-box {
+    background: #f00;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+}

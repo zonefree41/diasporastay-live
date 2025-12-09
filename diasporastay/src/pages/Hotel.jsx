@@ -1,111 +1,126 @@
-import { useParams, Link } from "react-router-dom"
-import { HOTELS } from "../data/hotels"
-import axios from "axios"
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import api from "../axios";
 
 export default function Hotel() {
-    const { id } = useParams()
-    const hotel = HOTELS.find((h) => h.id === parseInt(id))
+    const API = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+    const { id } = useParams();
 
-    if (!hotel) {
-        return (
-            <div className="container text-center py-5">
-                <h2 className="text-danger">Hotel not found</h2>
-                <Link to="/explore" className="btn btn-outline-primary mt-3">
-                    Back to Explore
-                </Link>
-            </div>
-        )
-    }
+    const [hotel, setHotel] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // ⚙️ Handle Stripe Checkout
-    const handleCheckout = async () => {
-        try {
-            const res = await axios.post("http://localhost:5000/api/create-checkout-session", {
-                hotel,
-                nights: 2,
-                guests: 2,
-            })
-            window.location.href = res.data.url
-        } catch (err) {
-            alert("Payment failed: " + err.message)
-        }
-    }
+    const [activeImg, setActiveImg] = useState(0); // gallery
+
+    useEffect(() => {
+        const loadHotel = async () => {
+            try {
+                const res = await axios.get(`${API}/api/hotels/${id}`);
+                setHotel(res.data);
+            } catch (err) {
+                console.error("Hotel fetch error:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadHotel();
+    }, [id]);
+
+    if (loading) return <div className="page-loading">Loading hotel...</div>;
+    if (!hotel) return <div className="page-loading">Hotel not found.</div>;
 
     return (
-        <div className="hotel-page">
-            {/* ✅ Hero / Banner */}
-            <section
-                className="hotel-banner text-white d-flex align-items-center"
-                style={{
-                    background: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${hotel.image}) center/cover no-repeat`,
-                    height: "55vh",
-                }}
-            >
-                <div className="container text-center">
-                    <h1 className="fw-bold mb-3">{hotel.name}</h1>
-                    <p className="lead mb-0">
-                        📍 {hotel.city}, {hotel.country} {hotel.flag}
-                    </p>
+        <div className="page-section fade-in">
+            <div className="container" style={{ maxWidth: "1200px" }}>
+
+                {/* HOTEL NAME & LOCATION */}
+                <div className="mb-4">
+                    <h1 className="fw-bold">{hotel.name}</h1>
+                    <p className="text-muted">{hotel.city}, {hotel.country}</p>
                 </div>
-            </section>
 
-            {/* ✅ Main Content */}
-            <div className="container py-5">
-                <div className="row g-4">
-                    {/* Left Side – Description */}
-                    <div className="col-lg-8">
-                        <h4 className="fw-bold mb-3">About this stay</h4>
-                        <p className="text-muted mb-4">{hotel.description}</p>
-
-                        <h5 className="fw-bold mt-4 mb-3">Amenities</h5>
-                        <div className="row row-cols-2 g-3 text-muted">
-                            <div className="col"><i className="bi bi-wifi me-2 text-primary"></i>Free Wi-Fi</div>
-                            <div className="col"><i className="bi bi-cup-hot me-2 text-primary"></i>Breakfast included</div>
-                            <div className="col"><i className="bi bi-car-front me-2 text-primary"></i>Airport pickup</div>
-                            <div className="col"><i className="bi bi-person-workspace me-2 text-primary"></i>Business center</div>
-                            <div className="col"><i className="bi bi-droplet-half me-2 text-primary"></i>Pool access</div>
-                            <div className="col"><i className="bi bi-door-open me-2 text-primary"></i>24-hour front desk</div>
-                        </div>
-
-                        <Link to="/explore" className="btn btn-outline-secondary mt-4">
-                            ← Back to Explore
-                        </Link>
+                {/* IMAGE GALLERY */}
+                <div className="hotel-gallery">
+                    {/* Main Image */}
+                    <div className="hero-img-wrapper">
+                        <img
+                            src={hotel.images[activeImg]}
+                            className="hero-img"
+                            alt="Hotel"
+                        />
                     </div>
 
-                    {/* Right Side – Booking Card */}
-                    <div className="col-lg-4">
-                        <div className="card shadow-sm border-0 sticky-top" style={{ top: "90px" }}>
-                            <div className="card-body text-center">
-                                <h4 className="fw-bold mb-3 text-primary">
-                                    ${hotel.price} <small className="text-muted fs-6">/ night</small>
-                                </h4>
-                                <p className="text-muted mb-3">Includes all taxes & fees</p>
+                    {/* Thumbnail Row */}
+                    <div className="thumb-row">
+                        {hotel.images.map((img, i) => (
+                            <div
+                                key={i}
+                                className={`thumb-wrapper ${activeImg === i ? "active" : ""}`}
+                                onClick={() => setActiveImg(i)}
+                            >
+                                <img src={img} alt="thumb" className="thumb-img" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label fw-semibold">Guests</label>
-                                    <select className="form-select text-center">
-                                        <option>1 Guest</option>
-                                        <option>2 Guests</option>
-                                        <option>3 Guests</option>
-                                        <option>4 Guests</option>
-                                    </select>
+                {/* HOTEL CONTENT */}
+                <div className="row mt-4 g-4">
+
+                    {/* LEFT CONTENT */}
+                    <div className="col-lg-8">
+
+                        {/* DESCRIPTION */}
+                        <div className="card shadow-sm mb-4">
+                            <div className="card-body">
+                                <h4 className="fw-bold mb-3">About this stay</h4>
+                                <p className="text-muted">{hotel.description}</p>
+                            </div>
+                        </div>
+
+                        {/* AMENITIES */}
+                        <div className="card shadow-sm mb-4">
+                            <div className="card-body">
+                                <h4 className="fw-bold mb-3">Amenities</h4>
+
+                                <div className="amenities-grid">
+                                    {hotel.amenities.map((a, i) => (
+                                        <div key={i} className="amenity-item">
+                                            <i className="bi bi-check-circle-fill text-primary me-2"></i>
+                                            {a}
+                                        </div>
+                                    ))}
                                 </div>
+                            </div>
+                        </div>
+                    </div>
 
-                                <button
-                                    onClick={handleCheckout}
-                                    className="btn btn-primary w-100 py-2"
-                                >
-                                    Reserve Now
+                    {/* RIGHT SIDEBAR */}
+                    <div className="col-lg-4">
+                        <div className="booking-box card shadow-sm">
+                            <div className="card-body">
+
+                                <h3 className="fw-bold mb-1">
+                                    ${hotel.pricePerNight}
+                                    <span className="text-muted small"> / night</span>
+                                </h3>
+
+                                <p className="text-muted small mb-3">Taxes may apply</p>
+
+                                <button className="btn btn-primary w-100 py-2 mb-3">
+                                    Continue to Booking
                                 </button>
 
-                                <p className="text-muted mt-3" style={{ fontSize: "0.9rem" }}>
-                                    Secure payment via Stripe 💳
+                                <p className="small text-muted">
+                                    You won't be charged yet — you’ll confirm details on the next page.
                                 </p>
                             </div>
                         </div>
                     </div>
+
                 </div>
+
             </div>
         </div>
-    )
+    );
 }

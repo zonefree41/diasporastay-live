@@ -1,0 +1,70 @@
+/* Hover animation for login buttons */
+.nav-auth-btn {
+    font-weight: 600;
+    transition: 0.25s ease-in-out;
+}
+
+.nav-auth-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+/* Guest Login hover */
+.btn-outline-primary.nav-auth-btn:hover {
+    background: linear-gradient(135deg, #0d6efd, #4da3ff);
+    color: #fff !important;
+}
+
+/* Owner Login button */
+.btn-primary.nav-auth-btn {
+    background: linear-gradient(135deg, #0d6efd, #1255d2);
+    border: none;
+}
+
+/* Owner Login hover */
+.btn-primary.nav-auth-btn:hover {
+    background: linear-gradient(135deg, #1255d2, #0a3e9d);
+    color: #fff !important;
+}
+
+/* Guest logout gradient button */
+.guest-logout-btn {
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(37, 117, 252, 0.25);
+    transition: 0.25s ease-in-out;
+    border: none;
+    color: #fff !important;
+}
+
+.guest-logout-btn:hover {
+    background: linear-gradient(135deg, #2575fc, #6a11cb);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37, 117, 252, 0.35);
+    color: white !important;
+}
+
+.guest-logout-btn:active {
+    transform: scale(0.96);
+}
+
+/* OWNER LOGOUT BUTTON — Premium Blue Gradient */
+.owner-logout-btn {
+    background: linear-gradient(135deg, #004e92, #000428);
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 78, 146, 0.25);
+    transition: 0.25s ease-in-out;
+    border: none;
+    color: #fff !important;
+}
+
+.owner-logout-btn:hover {
+    background: linear-gradient(135deg, #000428, #004e92);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 78, 146, 0.35);
+    color: white !important;
+}
+
+.owner-logout-btn:active {
+    transform: scale(0.96);
+}

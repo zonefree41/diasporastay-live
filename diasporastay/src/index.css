@@ -1,11 +1,24 @@
+/* ========= GLOBAL LAYOUT RESET ========= */
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base typography + rendering */
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: light;
+  color: #111827;
+  /* dark gray text */
+  background-color: #ffffff;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -13,86 +26,82 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Body should behave like a normal page, not a centered flexbox */
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  display: block;
+  background: #ffffff;
+}
+
+/* Extra safety: never let other styles turn the root into flex layout */
+html,
+body,
+#root {
+  display: block;
+}
+
+/* ========= LINKS ========= */
+
 a {
   font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  color: #0d6efd;
+  /* Bootstrap primary-ish */
+  text-decoration: none;
 }
 
 a:hover {
-  color: #535bf2;
+  color: #0b5ed7;
+  text-decoration: underline;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
+/* ========= HEADINGS & TEXT ========= */
 
 h1 {
-  font-size: 3.2em;
+  font-size: 3rem;
   line-height: 1.1;
+  margin-bottom: 0.5rem;
 }
+
+h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+/* ========= BUTTONS (LET BOOTSTRAP LEAD, JUST TWEAK) ========= */
 
 button {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
-  font-size: 1em;
+  font-size: 1rem;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #0d6efd;
+  color: #ffffff;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 button:hover {
-  border-color: #646cff;
+  border-color: #0a58ca;
+  background-color: #0b5ed7;
 }
 
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 0;
+  box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.4);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-
-  a:hover {
-    color: #747bff;
-  }
-
-  button {
-    background-color: #f9f9f9;
-  }
-}
-
-input.form-control:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.25);
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  transition: 0.3s ease;
-}
-
-select.form-select:focus,
-input.form-control:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.25);
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  transition: all 0.3s ease;
-}
-
+/* Bootstrap .btn-primary – slightly tuned to match brand */
 .btn-primary {
   background-color: #0071e3;
   border-color: #0071e3;
@@ -100,7 +109,51 @@ input.form-control:focus {
 
 .btn-primary:hover {
   background-color: #005cc5;
+  border-color: #005cc5;
 }
+
+/* ========= FORMS ========= */
+
+input.form-control,
+select.form-select {
+  border-radius: 30px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+}
+
+input.form-control:focus,
+select.form-select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Slightly more “chip-like” selects */
+select.form-select {
+  cursor: pointer;
+  padding: 0.5rem 1.5rem;
+}
+
+select.form-select:hover {
+  border-color: #0d6efd;
+}
+
+/* ========= CARDS / HOTEL CARDS ========= */
+
+.card {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  background-color: #ffffff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+  border-color: #d1d5db;
+}
+
+/* ========= HOTEL PAGE / BANNER ========= */
 
 .hotel-banner h1 {
   font-size: 3rem;
@@ -124,27 +177,258 @@ input.form-control:focus {
   }
 }
 
-/* Add in src/index.css or App.css */
-select.form-select {
-  border-radius: 30px;
-  padding: 0.5rem 1.5rem;
-  font-weight: 500;
+/* ========= HOME PAGE LAYOUT ========= */
+
+.home-wrapper {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.hero-section {
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.hotels-container {
+  margin-top: 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+}
+
+.no-hotels {
+  font-size: 18px;
+  color: #4b5563;
+  margin-top: 20px;
+}
+
+/* ========= GENERIC PAGE WRAPPER (use for pages like /my-bookings) ========= */
+
+.page-section {
+  background-color: #f5f7fb;
+  min-height: calc(100vh - 120px);
+  /* navbar + footer space */
+  padding: 24px 0;
+}
+
+.page-section .section-header {
+  margin-bottom: 1.5rem;
+}
+
+/* ========= FOOTER ========= */
+
+footer {
+  margin-top: 2rem;
+  width: 100%;
+}
+
+/* Stylish delete button for image thumbnails */
+.delete-image-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 0, 0, 0.82);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, background 0.2s ease;
+  z-index: 5;
 }
 
-select.form-select:hover {
-  border-color: #0d6efd;
+.delete-image-btn:hover {
+  background: rgba(255, 0, 0, 1);
+  transform: scale(1.15);
 }
 
-input.form-control,
-select.form-select {
-  border-radius: 30px;
-  padding: 0.5rem 1rem;
+.delete-image-btn i {
+  font-size: 16px;
+  pointer-events: none;
+}
+
+/* ============================================
+   GLOBAL OWNER DASHBOARD STYLING
+   ============================================ */
+
+/* --- Clean card shadow --- */
+.owner-card {
+  border-radius: 14px;
+  border: 1px solid #eee;
+  box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.06);
+  transition: 0.2s ease;
+}
+
+.owner-card:hover {
+  box-shadow: 0px 8px 26px rgba(0, 0, 0, 0.12);
+}
+
+/* --- Beautiful rounded nav pills --- */
+.owner-nav .nav-link {
+  border-radius: 30px !important;
   font-weight: 500;
+  padding: 10px 24px !important;
+  transition: 0.25s ease;
+  background: #f8f9fa;
+  color: #444 !important;
+  border: 1px solid transparent;
 }
 
-input.form-control:focus,
-select.form-select:focus {
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, .25);
-  border-color: #0d6efd;
+.owner-nav .nav-link:hover {
+  background: #e9ecef;
+}
+
+.owner-nav .nav-link.active {
+  background: #007bff !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.35);
+  border-color: transparent;
+}
+
+/* --- OWNER PORTAL badge --- */
+.owner-portal-badge {
+  background: linear-gradient(120deg, #0066ff, #003ddd);
+  padding: 8px 18px;
+  font-size: 14px;
+  border-radius: 30px;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* --- Modern blue action buttons --- */
+.btn-owner-primary {
+  background: linear-gradient(135deg, #006CFF, #003CDD);
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: 0.25s ease;
+}
+
+.btn-owner-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 4px 12px rgba(0, 110, 255, 0.4);
+}
+
+/* --- Outline button --- */
+.btn-owner-outline {
+  border: 2px solid #007bff !important;
+  border-radius: 10px;
+  color: #007bff !important;
+  padding: 9px 20px;
+  font-weight: 600;
+}
+
+.btn-owner-outline:hover {
+  background: #007bff !important;
+  color: white !important;
+}
+
+/* Customize danger button */
+.btn-owner-danger {
+  background: #dc3545;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  color: white;
+}
+
+.btn-owner-danger:hover {
+  background: #bb2d3b;
+}
+
+/* --- Hotel cards ---- */
+.hotel-card {
+  border-radius: 14px;
+  overflow: hidden;
+  background: white;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0px 6px 18px rgba(0, 0, 0, 0.08);
+  transition: 0.25s ease;
+}
+
+.hotel-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0px 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+.hotel-card img {
+  height: 180px;
+  object-fit: cover;
+  width: 100%;
+}
+
+/* --- Image delete button --- */
+.delete-image-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  background: rgba(220, 53, 69, 0.92);
+  border: none !important;
+  border-radius: 50%;
+  outline: none !important;
+  color: #fff;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
+
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+  transition: all 0.25s ease;
+  z-index: 999;
+}
+
+.delete-image-btn:hover {
+  background: #ff0000;
+  transform: scale(1.15);
+}
+
+.delete-image-btn i {
+  font-size: 18px;
+}
+
+/* --- Form inputs --- */
+.owner-input,
+.owner-textarea,
+.owner-select {
+  border-radius: 10px !important;
+  border: 1px solid #ddd !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  transition: 0.25s ease;
+}
+
+.owner-input:focus,
+.owner-textarea:focus,
+.owner-select:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15) !important;
+}
+
+/* --- Amenities checkbox styling --- */
+.amenity-check input {
+  transform: scale(1.4);
+  margin-right: 8px;
+}
+
+.amenity-check label {
+  font-size: 14px;
+  font-weight: 500;
 }

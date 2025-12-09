@@ -1,93 +1,181 @@
-import React from "react";
-import OwnerDashboard from "./OwnerDashboard";
 import { Routes, Route } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+
 import DSNavbar from "./components/DSNavbar";
 import DSFooter from "./components/DSFooter";
+
+// Pages
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import Hotel from "./pages/Hotel";
 import Checkout from "./pages/Checkout";
 import Success from "./pages/Success";
-import Cancel from "./pages/Cancel";
 import MyBookings from "./pages/MyBookings";
-import OwnerLogin from "./pages/OwnerLogin";
-import GuestLogin from "./pages/GuestLogin";
+
+// Admin
+import AdminLogin from "./admin/Login";
+import AdminDashboard from "./admin/Dashboard";
+import AdminHotels from "./admin/Hotels";
+import AdminOwners from "./admin/Owners";
+
+// Owner pages
+import OwnerDashboard from "./owners/OwnerDashboard";
+import OwnerLogin from "./owners/OwnerLogin";
+import OwnerRegister from "./owners/OwnerRegister";
+import OwnerHotels from "./owners/OwnerHotels";
+import AddHotel from "./owners/AddHotel";
+import EditHotel from "./owners/EditHotel";
+import Availability from "./owners/Availability";
+import OwnerBookings from "./owners/OwnerBookings";
+import OwnerEarnings from "./owners/OwnerEarnings";
+import GuestProfile from "./guests/GuestProfile.jsx";
+import GuestForgotPassword from "./guests/GuestForgotPassword";
+import OwnerForgotPassword from "./owners/OwnerForgotPassword";
+import OwnerResetPassword from "./owners/OwnerResetPassword";
+import GuestResetPassword from "./guests/GuestResetPassword";
+import OwnerEditProfile from "./owners/OwnerEditProfile";
 
 
-export default function App() {
+
+
+
+// Guest
+import GuestLogin from "./guests/GuestLogin";
+import GuestRegister from "./guests/GuestRegister";
+import GuestEditProfile from "./guests/GuestEditProfile";
+
+// Protection
+import OwnerProtectedRoute from "./components/OwnerProtectedRoute";
+
+function OwnerProtected({ children }) {
+  const token = localStorage.getItem("ownerToken");
+
+  if (!token) {
+    return <Navigate to="/owner/login" />;
+  }
+
+  return children;
+}
+
+function App() {
   return (
-    <div className="d-flex flex-column min-vh-100">
+    <>
       <DSNavbar />
 
-      <main className="flex-grow-1">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/hotel/:id" element={<Hotel />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/success" element={<Success />} />
-          <Route path="/cancel" element={<Cancel />} />
-          <Route path="/my-bookings" element={<MyBookings />} />
-          <Route path="/owner-dashboard" element={<OwnerDashboard />} />
-          <Route path="/owner-login" element={<OwnerLogin />} />
-          <Route path="/guest-login" element={<GuestLogin />} />
+      <Routes>
+        {/* PUBLIC PAGES */}
+        <Route path="/" element={<Home />} />
+        <Route path="/explore" element={<Explore />} />
+        <Route path="/hotels/:id" element={<Hotel />} />
+
+        {/* GUEST AUTH */}
+        <Route path="/guest/login" element={<GuestLogin />} />
+        <Route path="/guest/register" element={<GuestRegister />} />
+        <Route path="/guest/forgot-password" element={<GuestForgotPassword />} />
+        <Route path="/guest/bookings" element={<MyBookings />} />
+        <Route path="/guest/bookings" element={<MyBookings />} />
+        <Route path="/my-bookings" element={<MyBookings />} />
+        <Route path="/guest/reset-password/:token" element={<GuestResetPassword />} />
+        <Route path="/guest/profile/edit" element={<GuestEditProfile />} />
 
 
 
-          {/* 🧾 Hotel owner Stripe onboarding portal */}
-          <Route path="/owner" element={<OwnerDashboard />} />
-          <Route
-            path="/owner/onboarding/success"
-            element={
-              <div style={{ padding: "60px", textAlign: "center" }}>
-                <h1>🎉 Stripe Onboarding Successful</h1>
-                <p>
-                  Your Stripe Express account has been connected successfully.
-                  You can now receive payouts for your hotel bookings.
-                </p>
-                <a
-                  href="/owner"
-                  style={{
-                    background: "#635BFF",
-                    color: "white",
-                    padding: "10px 20px",
-                    borderRadius: "8px",
-                    textDecoration: "none",
-                  }}
-                >
-                  Back to Owner Dashboard
-                </a>
-              </div>
-            }
-          />
-          <Route
-            path="/owner/onboarding/refresh"
-            element={
-              <div style={{ padding: "60px", textAlign: "center" }}>
-                <h1>🔄 Stripe Onboarding Incomplete</h1>
-                <p>
-                  It looks like your Stripe onboarding wasn’t completed. Please
-                  try again using the link below.
-                </p>
-                <a
-                  href="/owner"
-                  style={{
-                    background: "#dc3545",
-                    color: "white",
-                    padding: "10px 20px",
-                    borderRadius: "8px",
-                    textDecoration: "none",
-                  }}
-                >
-                  Retry Onboarding
-                </a>
-              </div>
-            }
-          />
-        </Routes>
-      </main>
+        {/* OWNER AUTH */}
+        <Route path="/owner/login" element={<OwnerLogin />} />
+        <Route path="/owner/register" element={<OwnerRegister />} />
+        <Route path="/guest/profile" element={<GuestProfile />} />
+        <Route path="/owner/forgot-password" element={<OwnerForgotPassword />} />
+        <Route path="/owner/reset-password/:token" element={<OwnerResetPassword />} />
+        <Route path="/owner/edit-profile" element={<OwnerEditProfile />} />
+
+
+        {/* OWNER ROUTES PROTECTED */}
+        <Route
+          path="/owner/dashboard"
+          element={
+            <OwnerProtectedRoute>
+              <OwnerDashboard />
+            </OwnerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/owner/my-hotels"
+          element={
+            <OwnerProtectedRoute>
+              <OwnerHotels />
+            </OwnerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/owner/add-hotel"
+          element={
+            <OwnerProtectedRoute>
+              <AddHotel />
+            </OwnerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/owner/hotels/:id/edit"
+          element={
+            <OwnerProtectedRoute>
+              <EditHotel />
+            </OwnerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/owner/hotels/:id/availability"
+          element={
+            <OwnerProtectedRoute>
+              <Availability />
+            </OwnerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/owner/bookings"
+          element={
+            <OwnerProtectedRoute>
+              <OwnerBookings />
+            </OwnerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/owner/earnings"
+          element={
+            <OwnerProtectedRoute>
+              <OwnerEarnings />
+            </OwnerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/owner/reset-password/:token"
+          element={<OwnerResetPassword />}
+        />
+
+
+        {/* GUEST BOOKING PAGE */}
+        <Route path="/my-bookings" element={<MyBookings />} />
+
+        {/* CHECKOUT */}
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/success" element={<Success />} />
+
+        {/* ADMIN */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/hotels" element={<AdminHotels />} />
+        <Route path="/admin/owners" element={<AdminOwners />} />
+      </Routes>
 
       <DSFooter />
-    </div>
+    </>
   );
 }
+
+export default App;

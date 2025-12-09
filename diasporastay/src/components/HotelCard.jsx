@@ -1,28 +1,71 @@
-import { Link } from 'react-router-dom'
-
+import { Link } from "react-router-dom";
 
 export default function HotelCard({ hotel }) {
+    if (!hotel) return null;
+
+    let image = hotel.images?.[0] || hotel.image;
+
+    // FIX: If still missing, use fallback
+    if (!image) {
+        image = "https://via.placeholder.com/600x400?text=No+Image+Available";
+    }
+
+    // FIX UNSPLASH URL MISSING PARAMETERS
+    if (image.startsWith("https://images.unsplash.com")) {
+        image += "&auto=format&w=1200&q=80";
+    }
+
+    const price =
+        hotel.price ||
+        hotel.pricePerNight ||
+        0;
+
     return (
-        <div className="col">
-            <div className="card h-100 shadow-sm">
-                <img src={hotel.image} className="card-img-top" alt={hotel.name} />
+        <div className="col-md-4 col-sm-6">
+            <div className="card shadow-sm h-100" style={{ borderRadius: "10px" }}>
+                <Link to={`/hotels/${hotel._id}`}>
+                    <img
+                        src={image}
+                        className="card-img-top"
+                        alt={hotel.name}
+                        style={{
+                            height: "220px",
+                            width: "100%",
+                            objectFit: "cover",
+                            borderTopLeftRadius: "10px",
+                            borderTopRightRadius: "10px"
+                        }}
+                    />
+                </Link>
+
                 <div className="card-body d-flex flex-column">
-                    <div className="d-flex justify-content-between align-items-start">
-                        <h5 className="card-title mb-1">{hotel.name}</h5>
-                        <span className="badge text-bg-success">{hotel.rating.toFixed(1)}</span>
-                    </div>
-                    <p className="text-muted mb-2">{hotel.city}, {hotel.country}</p>
-                    <div className="mb-2 d-flex gap-1 flex-wrap">
-                        {hotel.tags?.slice(0, 3).map(t => (
-                            <span key={t} className="badge rounded-pill text-bg-light border">{t}</span>
-                        ))}
-                    </div>
-                    <div className="mt-auto d-flex align-items-center justify-content-between">
-                        <div><strong>${hotel.price}</strong><span className="text-muted"> /night</span></div>
-                        <Link to={`/hotel/${hotel.id}`} className="btn btn-outline-primary">View</Link>
+                    <h5 className="fw-bold">{hotel.name}</h5>
+
+                    {hotel.location && (
+                        <p className="text-muted" style={{ fontSize: "0.9rem" }}>
+                            <i className="bi bi-geo-alt-fill text-danger me-1"></i>
+                            {hotel.location}
+                        </p>
+                    )}
+
+                    <p className="text-secondary" style={{ fontSize: "0.85rem" }}>
+                        {hotel.description?.substring(0, 80)}...
+                    </p>
+
+                    <div className="mt-auto">
+                        <p className="fw-bold mb-2">
+                            ${price} <span className="text-muted">/ night</span>
+                        </p>
+
+                        <Link
+                            className="btn btn-primary w-100"
+                            to={`/hotels/${hotel._id}`}
+                        >
+                            View Details
+                        </Link>
                     </div>
                 </div>
             </div>
         </div>
-    )
+    );
 }

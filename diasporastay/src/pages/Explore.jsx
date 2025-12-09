@@ -1,87 +1,71 @@
-import { useState } from "react";
-import { HOTELS } from "../data/hotels";
+import { useEffect, useState } from "react";
+import api from "../axios";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
 export default function Explore() {
-    const [selectedCountry, setSelectedCountry] = useState("");
-    const [searchTerm, setSearchTerm] = useState("");
+  const API = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+  const [hotels, setHotels] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    // Unique country list for dropdown
-    const countries = [...new Set(HOTELS.map(h => h.country))];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await axios.get(`${API}/api/hotels`);
+        setHotels(res.data);
+      } catch (err) {
+        console.error("Explore fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
-    // Filter hotels by country + search term
-    const filteredHotels = HOTELS.filter((h) => {
-        const matchesCountry = selectedCountry ? h.country === selectedCountry : true;
-        const matchesSearch =
-            h.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            h.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            h.country.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesCountry && matchesSearch;
-    });
+  if (loading) return <div className="page-loading">Loading hotels...</div>;
 
-    return (
-        <div className="container py-5">
-            <h2 className="fw-bold text-center mb-4">Explore Stays</h2>
+  return (
+    <div className="page-section fade-in">
+      <div className="container" style={{ maxWidth: "1300px" }}>
 
-            {/* Filter and Search Controls */}
-            <div className="d-flex flex-wrap justify-content-center gap-3 mb-4">
-                <select
-                    className="form-select w-auto"
-                    value={selectedCountry}
-                    onChange={(e) => setSelectedCountry(e.target.value)}
-                >
-                    <option value="">🌍 All Countries</option>
-                    {countries.map((country) => (
-                        <option key={country} value={country}>
-                            {country}
-                        </option>
-                    ))}
-                </select>
-
-                <input
-                    type="text"
-                    className="form-control w-auto"
-                    style={{ minWidth: "250px" }}
-                    placeholder="🔍 Search by city or hotel..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
-
-            {/* Hotel Cards */}
-            <div className="row">
-                {filteredHotels.map((hotel) => (
-                    <div className="col-md-4 mb-4" key={hotel.id}>
-                        <div className="card shadow-sm h-100 border-0">
-                            <img
-                                src={hotel.image}
-                                className="card-img-top"
-                                alt={hotel.name}
-                                style={{ height: "220px", objectFit: "cover" }}
-                            />
-                            <div className="card-body">
-                                <h5 className="card-title fw-bold">{hotel.name}</h5>
-                                <p className="text-muted mb-1">
-                                    {hotel.city}, {hotel.country} {hotel.flag}
-                                </p>
-                                <p className="fw-semibold text-primary">${hotel.price} / night</p>
-                                <a
-                                    href={`/hotel/${hotel.id}`}
-                                    className="btn btn-outline-primary w-100"
-                                >
-                                    View Details
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* No results message */}
-            {filteredHotels.length === 0 && (
-                <p className="text-center text-muted mt-4">
-                    No hotels found. Try another search.
-                </p>
-            )}
+        {/* HEADER */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h2 className="fw-bold">Explore Stays</h2>
+          <p className="text-muted mb-0">{hotels.length} results</p>
         </div>
-    );
+
+        {/* HOTEL GRID */}
+        <div className="explore-grid">
+          {hotels.map((hotel) => (
+            <Link
+              key={hotel._id}
+              to={`/hotels/${hotel._id}`}
+              className="explore-card"
+            >
+              <div className="explore-card-img-wrapper">
+                <img
+                  src={hotel.images?.[0]}
+                  alt={hotel.name}
+                  className="explore-card-img"
+                />
+              </div>
+
+              <div className="explore-card-body">
+                <h5 className="hotel-name">{hotel.name}</h5>
+
+                <p className="text-muted small">
+                  {hotel.city}, {hotel.country}
+                </p>
+
+                <p className="price fw-semibold">
+                  ${hotel.pricePerNight}
+                  <span className="text-muted small"> / night</span>
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
