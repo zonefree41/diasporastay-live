@@ -9,15 +9,55 @@ import Stripe from "stripe";
 import ownerStripeConnectRoutes from "./routes/ownerStripeConnectRoutes.js";
 
 
+
 /* ======================================================
    APP + STRIPE INIT
 ====================================================== */
 const app = express();
+
+// =======================
+// ✅ CORS CONFIG (PRODUCTION SAFE)
+// =======================
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5175",
+    "https://diasporastay-live.vercel.app"
+];
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        // allow server-to-server / Postman / curl
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        } else {
+            console.error("❌ Blocked by CORS:", origin);
+            return callback(new Error("CORS not allowed"), false);
+        }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+};
+
+// Apply CORS
+app.use(cors(corsOptions));
+
+
+/* ======================================================
+   🧠 BODY PARSERS (AFTER WEBHOOK)
+====================================================== */
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /* ======================================================
    🟢 STRIPE WEBHOOK — MUST BE FIRST + RAW BODY
 ====================================================== */
+
 app.post(
     "/api/stripe/webhook",
     express.raw({ type: "application/json" }),
@@ -89,26 +129,6 @@ app.post(
             res.status(500).send("Webhook handler error");
         }
     }
-);
-
-/* ======================================================
-   🧠 BODY PARSERS (AFTER WEBHOOK)
-====================================================== */
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-/* ======================================================
-   🌍 CORS
-====================================================== */
-app.use(
-    cors({
-        origin: [
-            "http://localhost:5175",
-            "https://diasporastay.com",
-            "https://www.diasporastay.com"
-        ],
-        credentials: true,
-    })
 );
 
 
