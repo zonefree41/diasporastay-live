@@ -2,12 +2,17 @@ import Stripe from "stripe";
 import Booking from "../models/Booking.js";
 import Hotel from "../models/Hotel.js";
 
+// ✅ DEFINE FIRST (TOP OF FILE)
+const FRONTEND_URL = process.env.FRONTEND_URL;
+
+console.log("🔁 STRIPE REDIRECT URL IN USE:", FRONTEND_URL);
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /**
  * @desc   Create Stripe Checkout Session
  * @route  POST /api/stripe/create-checkout-session
- * @access Guest (middleware handled in routes)
+ * @access Guest
  */
 export const createCheckoutSession = async (req, res) => {
     try {
@@ -19,6 +24,10 @@ export const createCheckoutSession = async (req, res) => {
             nights,
             totalPrice,
         } = req.body;
+
+        if (!FRONTEND_URL) {
+            throw new Error("FRONTEND_URL is not defined in environment variables");
+        }
 
         // 🛑 Validate input
         if (!hotelId || !guestId || !checkIn || !checkOut || !totalPrice) {
@@ -42,7 +51,7 @@ export const createCheckoutSession = async (req, res) => {
             status: "PENDING",
         });
 
-        console.log("🟡 Booking created (PENDING):", booking._id);
+        console.log("🟡 Booking created (PENDING):", booking._id.toString());
 
         // 2️⃣ Stripe Checkout Session
         const session = await stripe.checkout.sessions.create({
@@ -64,7 +73,7 @@ export const createCheckoutSession = async (req, res) => {
                 },
             ],
             metadata: {
-                bookingId: booking._id.toString(), // 🔥 REQUIRED for webhook
+                bookingId: booking._id.toString(),
             },
         });
 
@@ -77,11 +86,7 @@ export const createCheckoutSession = async (req, res) => {
     } catch (error) {
         console.error("❌ Stripe error:", error);
         res.status(500).json({
-            message: "Failed to create checkout session",
+            message: error.message || "Failed to create checkout session",
         });
     }
 };
-
-console.log("🔁 STRIPE REDIRECT URL:", process.env.FRONTEND_URL);
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5175";
-
