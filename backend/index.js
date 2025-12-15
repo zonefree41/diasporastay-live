@@ -56,15 +56,30 @@ const allowedOrigins = [
     "https://diasporastay-live.vercel.app",
 ];
 
-app.use(
-    cors({
-        origin: allowedOrigins,
-        credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-        optionsSuccessStatus: 204,
-    })
-);
+// =========================
+// ✅ FINAL PRODUCTION CORS (RENDER + VERCEL SAFE)
+// =========================
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+
+    res.header("Access-Control-Allow-Origin", origin || "*");
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    );
+    res.header(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    );
+
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(204);
+    }
+
+    next();
+});
+
 
 // ✅ Express 5-safe preflight handler (no "*")
 app.use((req, res, next) => {
