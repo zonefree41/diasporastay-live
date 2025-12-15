@@ -81,3 +81,7 @@ export const createCheckoutSession = async (req, res) => {
         });
     }
 };
+
+console.log("🔁 STRIPE REDIRECT URL:", process.env.FRONTEND_URL);
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5175";
+
