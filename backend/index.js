@@ -16,7 +16,7 @@ import ownerStripeConnectRoutes from "./routes/ownerStripeConnectRoutes.js";
 const app = express();
 
 // =======================
-// ✅ CORS CONFIG (PRODUCTION SAFE)
+// ✅ CORS CONFIG (EXPRESS 5 SAFE)
 // =======================
 
 const allowedOrigins = [
@@ -25,30 +25,35 @@ const allowedOrigins = [
     "https://diasporastay-live.vercel.app"
 ];
 
-const corsOptions = {
-    origin: function (origin, callback) {
-        // allow server-to-server / Postman / curl
-        if (!origin) return callback(null, true);
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            // Allow server-to-server, Postman, curl
+            if (!origin) return callback(null, true);
 
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        } else {
-            console.error("❌ Blocked by CORS:", origin);
-            return callback(new Error("CORS not allowed"), false);
-        }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-};
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
 
-// Apply CORS
-app.use(cors(corsOptions));
+            // ⚠️ DO NOT throw error — just deny silently
+            return callback(null, false);
+        },
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        optionsSuccessStatus: 204
+    })
+);
 
+// ✅ IMPORTANT: handle OPTIONS without auth
+app.use((req, res, next) => {
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(204);
+    }
+    next();
+});
 
-/* ======================================================
-   🧠 BODY PARSERS (AFTER WEBHOOK)
-====================================================== */
+// Body parsers AFTER CORS
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
