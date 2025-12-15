@@ -18,11 +18,9 @@ import Privacy from "./pages/legal/Privacy.jsx";
 import Refund from "./pages/legal/Refund.jsx";
 
 
-
-
-
 // Booking Success
-import BookingSuccess from "./booking/bookingSuccess.jsx";
+import BookingSuccess from "./src/BookingSuccess.jsx";
+
 
 // Admin
 import AdminLogin from "./admin/Login";
