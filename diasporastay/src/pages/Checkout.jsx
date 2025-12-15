@@ -26,7 +26,7 @@ export default function Checkout() {
 
         const loadHotel = async () => {
             try {
-                const res = await axios.get(`${API}/api/hotels/${hotelId}`);
+                const res = await api.get(`/api/hotels/${hotelId}`);
                 setHotel(res.data);
             } catch (err) {
                 console.error("Checkout load error:", err);
@@ -42,24 +42,42 @@ export default function Checkout() {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
+    // ================================
+    // CONFIRM BOOKING → STRIPE CHECKOUT
+    // ================================
     const handleConfirmBooking = async () => {
         try {
+            const guestId = localStorage.getItem("guestId");
+
+            if (!guestId) {
+                alert("You must be logged in to complete booking.");
+                navigate("/guest/login");
+                return;
+            }
+
+            // Calculate number of nights
+            const nights = Math.ceil(
+                (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)
+            );
+
             const payload = {
                 hotelId,
-                fullName: form.fullName,
-                email: form.email,
-                phone: form.phone,
+                guestId,
                 checkIn,
                 checkOut,
-                totalPrice,
+                nights,
+                totalPrice
             };
 
-            await axios.post(`${API}/api/bookings/create`, payload);
+            // Start Stripe Checkout
+            const res = await api.post(`/api/bookings/create-checkout`, payload);
 
-            navigate("/success");
+            // Redirect to Stripe
+            window.location.href = res.data.url;
+
         } catch (err) {
-            console.error("Booking error:", err);
-            alert("Failed to confirm booking");
+            console.error("Booking error:", err.response?.data || err);
+            alert("Unable to start booking.");
         }
     };
 
@@ -72,7 +90,6 @@ export default function Checkout() {
                 {/* LEFT SIDE – FORM */}
                 <div className="col-lg-7">
                     <div className="checkout-card p-4">
-
                         <h3 className="fw-bold mb-3">Complete Your Booking</h3>
 
                         <div className="mb-3">
@@ -123,7 +140,6 @@ export default function Checkout() {
                 {/* RIGHT SIDE – SUMMARY */}
                 <div className="col-lg-5">
                     <div className="checkout-summary shadow-sm">
-
                         <img
                             src={hotel.images[0]}
                             className="summary-image"
@@ -152,7 +168,7 @@ export default function Checkout() {
                                 className="btn btn-primary w-100 btn-lg mt-3 premium-book-btn"
                                 onClick={handleConfirmBooking}
                             >
-                                Confirm Booking
+                                Confirm Booking & Pay
                             </button>
                         </div>
                     </div>

@@ -10,328 +10,288 @@ export default function EditHotel() {
     const { id } = useParams();
     const navigate = useNavigate();
 
+    const [hotel, setHotel] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const [name, setName] = useState("");
+    const [city, setCity] = useState("");
+    const [country, setCountry] = useState("");
+    const [pricePerNight, setPricePerNight] = useState("");
+    const [description, setDescription] = useState("");
+    const [amenities, setAmenities] = useState([]);
+    const [images, setImages] = useState([]);
+
+    const [newImages, setNewImages] = useState([]); // files to upload
+    const [previewImages, setPreviewImages] = useState([]); // local previews
+
+    const [error, setError] = useState("");
     const [saving, setSaving] = useState(false);
 
-    const [form, setForm] = useState({
-        name: "",
-        city: "",
-        country: "",
-        pricePerNight: "",
-        description: "",
-        amenities: [],
-        images: [],
-    });
-
-    const [newImages, setNewImages] = useState([]);
-
-    const amenitiesList = [
-        "Free WiFi",
-        "Parking",
-        "Airport Shuttle",
-        "Swimming Pool",
-        "Restaurant",
-        "Fitness Center",
-        "Air Conditioning",
-        "Room Service",
-    ];
-
-    // Load hotel
-    useEffect(() => {
-        const loadHotel = async () => {
-            try {
-                const res = await axios.get(`${API}/api/hotels/${id}`);
-                setForm(res.data);
-            } catch (err) {
-                console.error("Error loading hotel:", err);
-                alert("Could not load hotel");
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadHotel();
-    }, [id]);
-
-    const updateField = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
-
-    const toggleAmenity = (a) => {
-        setForm({
-            ...form,
-            amenities: form.amenities.includes(a)
-                ? form.amenities.filter((x) => x !== a)
-                : [...form.amenities, a],
-        });
-    };
-
-    const handleImageSelect = (e) => {
-        const files = Array.from(e.target.files);
-        setNewImages([...newImages, ...files]);
-    };
-
-    // Upload new images to Cloudinary
-    const uploadImagesToCloudinary = async () => {
-        const urls = [];
-        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-        const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-
-        for (const file of newImages) {
-            const data = new FormData();
-            data.append("file", file);
-            data.append("upload_preset", preset);
-
-            const res = await axios.post(
-                `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-                data
-            );
-
-            urls.push(res.data.secure_url);
-        }
-
-        return urls;
-    };
-
-    const removeOldImage = (url) => {
-        setForm({
-            ...form,
-            images: form.images.filter((img) => img !== url),
-        });
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setSaving(true);
-
+    /* ====================================================================
+       LOAD HOTEL DATA
+    ==================================================================== */
+    const loadHotel = async () => {
         try {
-            let newImageUrls = [];
-            if (newImages.length > 0) {
-                newImageUrls = await uploadImagesToCloudinary();
-            }
-
             const token = localStorage.getItem("ownerToken");
 
+            const res = await api.get(`/api/owner/hotels/${id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            const h = res.data;
+            setHotel(h);
+
+            setName(h.name);
+            setCity(h.city);
+            setCountry(h.country);
+            setPricePerNight(h.pricePerNight);
+            setDescription(h.description);
+            setAmenities(h.amenities || []);
+            setImages(h.images || []);
+
+        } catch (err) {
+            console.error("❌ Load hotel error:", err.response?.data);
+            setError("Failed to load hotel.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadHotel();
+    }, []);
+
+    /* ====================================================================
+       IMAGE UPLOAD TO CLOUDINARY
+    ==================================================================== */
+    const handleImageUpload = (e) => {
+        const files = Array.from(e.target.files);
+        setNewImages(files);
+
+        const previews = files.map((file) => URL.createObjectURL(file));
+        setPreviewImages(previews);
+    };
+
+    const uploadToCloudinary = async () => {
+        if (newImages.length === 0) return [];
+
+        const uploadedUrls = [];
+
+        for (let img of newImages) {
+            const formData = new FormData();
+            formData.append("file", img);
+            formData.append("upload_preset", "diasporastay"); // change if needed
+
+            const uploadRes = await fetch(
+                "https://api.cloudinary.com/v1_1/diasporastay/image/upload",
+                { method: "POST", body: formData }
+            );
+
+            const data = await uploadRes.json();
+            uploadedUrls.push(data.secure_url);
+        }
+
+        return uploadedUrls;
+    };
+
+    /* ====================================================================
+       SAVE HOTEL CHANGES
+    ==================================================================== */
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        setError("");
+
+        try {
+            const token = localStorage.getItem("ownerToken");
+
+            // Upload new images if selected
+            const newImageUrls = await uploadToCloudinary();
+
             const payload = {
-                ...form,
-                images: [...form.images, ...newImageUrls],
+                name,
+                city,
+                country,
+                pricePerNight,
+                description,
+                amenities,
+                images: [...images, ...newImageUrls],
             };
 
-            await axios.patch(
-                `${API}/api/owner/hotels/${id}/edit`,
-                payload,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
+            await api.put(`/api/owner/hotels/${id}`, payload, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
             alert("Hotel updated successfully!");
             navigate("/owner/my-hotels");
 
         } catch (err) {
-            console.error("Error updating hotel:", err);
-            alert("Failed to update hotel");
+            console.error("❌ Save hotel error:", err.response?.data);
+            setError("Failed to update hotel.");
         } finally {
             setSaving(false);
+        }
+    };
+
+    /* ====================================================================
+       AMENITIES HANDLER
+    ==================================================================== */
+    const toggleAmenity = (item) => {
+        if (amenities.includes(item)) {
+            setAmenities(amenities.filter((a) => a !== item));
+        } else {
+            setAmenities([...amenities, item]);
         }
     };
 
     if (loading) {
         return (
             <OwnerLayout>
-                <h4>Loading hotel...</h4>
+                <p className="text-muted">Loading hotel...</p>
             </OwnerLayout>
         );
     }
 
+    if (!hotel) {
+        return (
+            <OwnerLayout>
+                <p className="text-danger">Hotel not found.</p>
+            </OwnerLayout>
+        );
+    }
+
+    /* ====================================================================
+       RENDER UI
+    ==================================================================== */
     return (
-        <OwnerLayout active="my-hotels">
+        <OwnerLayout>
             <h3 className="fw-bold mb-4">Edit Hotel</h3>
 
-            <form onSubmit={handleSubmit} className="row g-4">
+            {error && <div className="alert alert-danger">{error}</div>}
 
-                {/* TEXT FIELDS */}
-                <div className="col-md-6">
-                    <label className="form-label fw-semibold">Hotel Name</label>
+            <form onSubmit={handleSave}>
+
+                {/* NAME */}
+                <div className="mb-3">
+                    <label className="fw-semibold">Hotel Name</label>
                     <input
-                        name="name"
-                        type="text"
                         className="form-control"
-                        value={form.name}
-                        onChange={updateField}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
                     />
                 </div>
 
-                <div className="col-md-3">
-                    <label className="form-label fw-semibold">City</label>
+                {/* CITY */}
+                <div className="mb-3">
+                    <label className="fw-semibold">City</label>
                     <input
-                        name="city"
-                        type="text"
                         className="form-control"
-                        value={form.city}
-                        onChange={updateField}
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        required
                     />
                 </div>
 
-                <div className="col-md-3">
-                    <label className="form-label fw-semibold">Country</label>
+                {/* COUNTRY */}
+                <div className="mb-3">
+                    <label className="fw-semibold">Country</label>
                     <input
-                        name="country"
-                        type="text"
                         className="form-control"
-                        value={form.country}
-                        onChange={updateField}
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        required
                     />
                 </div>
 
-                <div className="col-md-4">
-                    <label className="form-label fw-semibold">Price Per Night ($)</label>
+                {/* PRICE */}
+                <div className="mb-3">
+                    <label className="fw-semibold">Price / Night ($)</label>
                     <input
-                        name="pricePerNight"
                         type="number"
                         className="form-control"
-                        value={form.pricePerNight}
-                        onChange={updateField}
+                        value={pricePerNight}
+                        onChange={(e) => setPricePerNight(e.target.value)}
+                        required
                     />
                 </div>
 
-                <div className="col-md-8">
-                    <label className="form-label fw-semibold">Description</label>
+                {/* DESCRIPTION */}
+                <div className="mb-3">
+                    <label className="fw-semibold">Description</label>
                     <textarea
-                        name="description"
-                        rows="3"
                         className="form-control"
-                        value={form.description}
-                        onChange={updateField}
+                        rows="4"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        required
                     ></textarea>
                 </div>
 
                 {/* AMENITIES */}
-                <div className="col-12">
-                    <label className="form-label fw-semibold">Amenities</label>
-                    <div className="d-flex flex-wrap gap-2">
-                        {amenitiesList.map((a) => (
-                            <span
-                                key={a}
-                                onClick={() => toggleAmenity(a)}
-                                className={
-                                    "amenity-pill " +
-                                    (form.amenities.includes(a)
-                                        ? "amenity-active"
-                                        : "")
-                                }
-                            >
-                                {a}
-                            </span>
-                        ))}
-                    </div>
+                <div className="mb-4">
+                    <label className="fw-semibold d-block mb-2">Amenities</label>
+                    {["Wifi", "Breakfast", "Parking", "Pool", "Gym"].map((amen) => (
+                        <div key={amen} className="form-check">
+                            <input
+                                type="checkbox"
+                                className="form-check-input"
+                                checked={amenities.includes(amen)}
+                                onChange={() => toggleAmenity(amen)}
+                            />
+                            <label className="form-check-label">{amen}</label>
+                        </div>
+                    ))}
                 </div>
 
                 {/* EXISTING IMAGES */}
-                <div className="col-12">
-                    <label className="form-label fw-semibold">Current Images</label>
-
-                    <div className="d-flex flex-wrap gap-3">
-                        {form.images.map((url, i) => (
-                            <div key={i} className="img-box position-relative">
-                                <img src={url} className="img-thumb" />
-
-                                <button
-                                    type="button"
-                                    className="delete-btn"
-                                    onClick={() => removeOldImage(url)}
-                                >
-                                    <i className="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        ))}
-                    </div>
+                <label className="fw-semibold">Existing Images</label>
+                <div className="d-flex gap-3 mb-3 flex-wrap">
+                    {images.map((img, i) => (
+                        <img
+                            key={i}
+                            src={img}
+                            alt="hotel"
+                            className="rounded"
+                            style={{ width: "120px", height: "90px", objectFit: "cover" }}
+                        />
+                    ))}
                 </div>
 
                 {/* NEW IMAGES */}
-                <div className="col-12">
-                    <label className="form-label fw-semibold">Add New Images</label>
+                <div className="mb-4">
+                    <label className="fw-semibold">Upload More Images</label>
                     <input
                         type="file"
                         multiple
                         className="form-control"
-                        onChange={handleImageSelect}
+                        onChange={handleImageUpload}
                     />
 
-                    <div className="d-flex flex-wrap gap-3 mt-3">
-                        {newImages.map((file, i) => (
-                            <img
-                                key={i}
-                                src={URL.createObjectURL(file)}
-                                className="img-thumb"
-                            />
-                        ))}
-                    </div>
+                    {/* Preview */}
+                    {previewImages.length > 0 && (
+                        <div className="d-flex gap-3 mt-3 flex-wrap">
+                            {previewImages.map((img, i) => (
+                                <img
+                                    key={i}
+                                    src={img}
+                                    style={{
+                                        width: "120px",
+                                        height: "90px",
+                                        objectFit: "cover",
+                                        borderRadius: "8px",
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                <div className="col-12">
-                    <button className="btn btn-primary px-4 py-2 rounded-pill" disabled={saving}>
-                        {saving ? "Saving..." : "Save Changes"}
-                    </button>
-                </div>
+                {/* BUTTON */}
+                <button className="btn btn-primary mt-3" disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                </button>
             </form>
-
-            {/* CSS */}
-            <style>
-                {`
-                .img-thumb {
-                    width: 140px;
-                    height: 100px;
-                    object-fit: cover;
-                    border-radius: 10px;
-                    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-                    transition: transform 0.25s;
-                }
-
-                .img-thumb:hover {
-                    transform: scale(1.05);
-                }
-
-                .img-box {
-                    position: relative;
-                    display: inline-block;
-                }
-
-                .delete-btn {
-                    position: absolute;
-                    top: 6px;
-                    right: 6px;
-                    background: rgba(0,0,0,0.6);
-                    border: none;
-                    color: white;
-                    padding: 6px 8px;
-                    border-radius: 50%;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                }
-
-                .delete-btn:hover {
-                    background: rgba(255,0,0,0.8);
-                }
-
-                .amenity-pill {
-                    padding: 7px 14px;
-                    border-radius: 50px;
-                    background: #f1f1f1;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: all 0.25s;
-                }
-
-                .amenity-active {
-                    background: #007bff;
-                    color: white;
-                }
-
-                .amenity-pill:hover {
-                    background: #e5e5e5;
-                }
-            `}
-            </style>
         </OwnerLayout>
     );
 }

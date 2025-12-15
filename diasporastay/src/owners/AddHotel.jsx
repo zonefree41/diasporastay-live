@@ -1,10 +1,8 @@
 // src/owners/AddHotel.jsx
 import { useState } from "react";
-import api from "../axios";
+import api from "../axios"; // <-- correct axios instance
 import OwnerLayout from "./OwnerLayout";
 import { useNavigate } from "react-router-dom";
-
-const API = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
 export default function AddHotel() {
   const navigate = useNavigate();
@@ -50,6 +48,9 @@ export default function AddHotel() {
     setLocalImages(files);
   };
 
+  // ===========================================
+  // ⭐ FIXED CLOUDINARY UPLOAD — uses fetch()
+  // ===========================================
   const uploadImagesToCloudinary = async () => {
     const urls = [];
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
@@ -60,17 +61,24 @@ export default function AddHotel() {
       data.append("file", file);
       data.append("upload_preset", preset);
 
-      const res = await axios.post(
+      const res = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        data
+        {
+          method: "POST",
+          body: data,
+        }
       );
 
-      urls.push(res.data.secure_url);
+      const json = await res.json();
+      urls.push(json.secure_url);
     }
 
     return urls;
   };
 
+  // ===========================================
+  // ⭐ HANDLE SUBMISSION — uses api.post()
+  // ===========================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -82,16 +90,13 @@ export default function AddHotel() {
         imageUrls = await uploadImagesToCloudinary();
       }
 
-      const token = localStorage.getItem("ownerToken");
-
       const payload = {
         ...form,
         images: imageUrls,
       };
 
-      await axios.post(`${API}/api/owner/hotels/create`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // api.post() automatically includes Authorization header + Base URL
+      await api.post("/api/owner/hotels/create", payload);
 
       alert("Hotel added successfully!");
       navigate("/owner/my-hotels");
@@ -226,56 +231,56 @@ export default function AddHotel() {
 
       {/* STYLES */}
       <style>{`
-                .add-hotel-card {
-                    background: #fff;
-                    border-radius: 16px;
-                    padding: 30px;
-                    max-width: 900px;
-                    margin: auto;
-                }
+        .add-hotel-card {
+          background: #fff;
+          border-radius: 16px;
+          padding: 30px;
+          max-width: 900px;
+          margin: auto;
+        }
 
-                .custom-input {
-                    border-radius: 10px;
-                    padding: 10px 14px;
-                }
+        .custom-input {
+          border-radius: 10px;
+          padding: 10px 14px;
+        }
 
-                .amenity-check input {
-                    cursor: pointer;
-                }
+        .amenity-check input {
+          cursor: pointer;
+        }
 
-                .amenity-check label {
-                    margin-left: 6px;
-                    cursor: pointer;
-                    font-weight: 500;
-                }
+        .amenity-check label {
+          margin-left: 6px;
+          cursor: pointer;
+          font-weight: 500;
+        }
 
-                .upload-box {
-                    border: 2px dashed #c9c9c9;
-                    padding: 25px;
-                    text-align: center;
-                    border-radius: 14px;
-                    transition: 0.3s;
-                    cursor: pointer;
-                }
+        .upload-box {
+          border: 2px dashed #c9c9c9;
+          padding: 25px;
+          text-align: center;
+          border-radius: 14px;
+          transition: 0.3s;
+          cursor: pointer;
+        }
 
-                .upload-box:hover {
-                    border-color: #007bff;
-                    background: #f8faff;
-                }
+        .upload-box:hover {
+          border-color: #007bff;
+          background: #f8faff;
+        }
 
-                .preview-img {
-                    width: 140px;
-                    height: 110px;
-                    object-fit: cover;
-                    border-radius: 10px;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                }
+        .preview-img {
+          width: 140px;
+          height: 110px;
+          object-fit: cover;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
 
-                .submit-btn {
-                    font-size: 17px;
-                    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-                }
-            `}</style>
+        .submit-btn {
+          font-size: 17px;
+          box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+      `}</style>
     </OwnerLayout>
   );
 }

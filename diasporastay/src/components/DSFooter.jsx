@@ -67,6 +67,13 @@ export default function DSFooter() {
                     © {new Date().getFullYear()} DiasporaStay — All Rights Reserved.
                 </div>
 
+                <div className="footer-links">
+                    <a href="/terms">Terms</a> ·{" "}
+                    <a href="/privacy">Privacy</a> ·{" "}
+                    <a href="/refund-policy">Refund Policy</a>
+                </div>
+
+
             </div>
         </footer>
     );

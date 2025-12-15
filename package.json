@@ -1,36 +1,16 @@
 {
-  "name": "diasporastay-backend",
+  "name": "diasporastay-root",
+  "private": true,
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "type": "module",
   "scripts": {
-    "server": "node index.js",
-    "client": "cd diasporastay && npm run dev",
-    "dev": "concurrently \"npm run server\" \"npm run client\""
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@popperjs/core": "^2.11.8",
-    "axios": "^1.13.1",
-    "bcryptjs": "^3.0.3",
-    "bootstrap": "^5.3.8",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "lucide-react": "^0.553.0",
-    "mongoose": "^8.19.3",
-    "react-bootstrap": "^2.10.10",
-    "stripe": "^19.2.0"
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix diasporastay\"",
+    "backend": "npm run dev --prefix backend",
+    "frontend": "npm run dev --prefix diasporastay"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^5.1.0",
-    "bootstrap-icons": "^1.13.1",
-    "concurrently": "^9.2.1",
-    "nodemon": "^3.1.10",
-    "vite": "^7.2.1"
+    "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "nodemailer": "^7.0.11"
   }
 }

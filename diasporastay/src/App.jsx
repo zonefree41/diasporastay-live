@@ -9,17 +9,30 @@ import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import Hotel from "./pages/Hotel";
 import Checkout from "./pages/Checkout";
-import Success from "./pages/Success";
 import MyBookings from "./pages/MyBookings";
+import OwnerPayoutHistory from "./owners/OwnerPayoutHistory.jsx";
+
+// Terms, Privacy, Refund
+import Terms from "./pages/legal/Terms.jsx";
+import Privacy from "./pages/legal/Privacy.jsx";
+import Refund from "./pages/legal/Refund.jsx";
+
+
+
+
+
+// Booking Success
+import BookingSuccess from "./booking/bookingSuccess.jsx";
 
 // Admin
 import AdminLogin from "./admin/Login";
 import AdminDashboard from "./admin/Dashboard";
 import AdminHotels from "./admin/Hotels";
 import AdminOwners from "./admin/Owners";
+import AdminPayoutDashboard from "./pages/admin/AdminPayoutDashboard";
 
 // Owner pages
-import OwnerDashboard from "./owners/OwnerDashboard";
+import OwnerDashboard from "./pages/OwnerDashboard.jsx";
 import OwnerLogin from "./owners/OwnerLogin";
 import OwnerRegister from "./owners/OwnerRegister";
 import OwnerHotels from "./owners/OwnerHotels";
@@ -34,7 +47,10 @@ import OwnerForgotPassword from "./owners/OwnerForgotPassword";
 import OwnerResetPassword from "./owners/OwnerResetPassword";
 import GuestResetPassword from "./guests/GuestResetPassword";
 import OwnerEditProfile from "./owners/OwnerEditProfile";
-
+import OwnerAvailability from "./owners/OwnerAvailability";
+import BookingCancel from "./pages/BookingCancel";
+import OwnerStripeConnect from "./pages/OwnerStripeConnect";
+import OwnerStripeSuccess from "./pages/OwnerStripeSuccess";
 
 
 
@@ -78,6 +94,14 @@ function App() {
         <Route path="/guest/reset-password/:token" element={<GuestResetPassword />} />
         <Route path="/guest/profile/edit" element={<GuestEditProfile />} />
 
+        {/* BOOKING SUCCESS */}
+        <Route path="/booking/success" element={<BookingSuccess />} />
+
+        { /* BOOKING CANCEL */}
+        <Route path="/booking/cancel" element={<BookingCancel />} />
+
+
+
 
 
         {/* OWNER AUTH */}
@@ -87,6 +111,16 @@ function App() {
         <Route path="/owner/forgot-password" element={<OwnerForgotPassword />} />
         <Route path="/owner/reset-password/:token" element={<OwnerResetPassword />} />
         <Route path="/owner/edit-profile" element={<OwnerEditProfile />} />
+        <Route path="/owner/hotels/:id/availability" element={<OwnerAvailability />} />
+        <Route path="/owner/stripe" element={<OwnerStripeConnect />} />
+        <Route path="/owner/stripe/success" element={<OwnerStripeSuccess />} />
+        <Route path="/owner/payouts/history" element={<OwnerPayoutHistory />} />
+
+        // Legal pages (TOP LEVEL)
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/refund-policy" element={<Refund />} />
+
 
 
         {/* OWNER ROUTES PROTECTED */}
@@ -154,6 +188,11 @@ function App() {
         />
 
         <Route
+          path="/admin/payouts"
+          element={<AdminPayoutDashboard />}
+        />
+
+        <Route
           path="/owner/reset-password/:token"
           element={<OwnerResetPassword />}
         />
@@ -164,7 +203,6 @@ function App() {
 
         {/* CHECKOUT */}
         <Route path="/checkout" element={<Checkout />} />
-        <Route path="/success" element={<Success />} />
 
         {/* ADMIN */}
         <Route path="/admin/login" element={<AdminLogin />} />

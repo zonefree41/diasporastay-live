@@ -1,0 +1,66 @@
+/* ============================
+   PREMIUM GOLD + BLACK THEME
+   Used in OwnerDashboard.jsx
+============================ */
+
+.dashboard-wrapper {
+    padding: 20px;
+}
+
+.metric-card {
+    background: #111;
+    border: 1px solid #c9a747;
+    color: white;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: 0.25s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    border-color: #e6c56b;
+}
+
+.metric-title {
+    font-size: 0.9rem;
+    color: #c9a747;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.metric-value {
+    font-size: 1.9rem;
+    font-weight: 700;
+}
+
+.chart-card {
+    background: #111;
+    border-radius: 14px;
+    border: 1px solid #c9a747;
+    padding: 20px;
+    margin-top: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.chart-card h5 {
+    color: #c9a747;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.btn-edit-profile {
+    background: #c9a747;
+    border: none;
+    color: #111;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    transition: 0.25s ease;
+}
+
+.btn-edit-profile:hover {
+    background: #e6c56b;
+    transform: translateY(-3px);
+}
