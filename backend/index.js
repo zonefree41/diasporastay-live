@@ -80,6 +80,16 @@ app.use((req, res, next) => {
     next();
 });
 
+app.get("/", (req, res) => {
+    res.json({
+        status: "OK",
+        service: "DiasporaStay Backend",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+    });
+});
+
+
 
 // ✅ Express 5-safe preflight handler (no "*")
 app.use((req, res, next) => {
