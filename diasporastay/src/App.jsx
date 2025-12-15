@@ -19,7 +19,7 @@ import Refund from "./pages/legal/Refund.jsx";
 
 
 // Booking Success
-import BookingSuccess from "./book/BookingSuccess.jsx";
+import BookingSuccess from "./src/booking/BookingSuccess.jsx";
 
 
 // Admin
