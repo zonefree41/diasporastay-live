@@ -2,43 +2,26 @@ import jwt from "jsonwebtoken";
 import Owner from "../models/Owner.js";
 
 export const protectOwner = async (req, res, next) => {
-    let token;
+  try {
+    const authHeader = req.headers.authorization;
 
-    if (
-        req.headers.authorization &&
-        req.headers.authorization.startsWith("Bearer ")
-    ) {
-        token = req.headers.authorization.split(" ")[1];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Not authorized, no token" });
     }
 
-    if (!token) {
-        return res.status(401).json({ message: "Owner token missing" });
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const owner = await Owner.findById(decoded.ownerId).select("-password");
+
+    if (!owner) {
+      return res.status(401).json({ message: "Owner not found" });
     }
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        console.log("🔍 Decoded owner token:", decoded);
-
-        // 🔥 SUPPORT BOTH TOKEN SHAPES
-        const ownerId = decoded.ownerId || decoded.id;
-
-        if (!ownerId) {
-            return res.status(401).json({ message: "Invalid owner token payload" });
-        }
-
-        const owner = await Owner.findById(ownerId).select("-password");
-
-        if (!owner) {
-            return res.status(401).json({ message: "Owner not found" });
-        }
-
-        req.ownerId = owner._id;
-        req.owner = owner;
-
-        next();
-    } catch (err) {
-        console.error("❌ protectOwner error:", err.message);
-        return res.status(401).json({ message: "Invalid owner token" });
-    }
+    req.owner = owner;
+    next();
+  } catch (error) {
+    console.error("protectOwner error:", error);
+    res.status(401).json({ message: "Invalid token" });
+  }
 };

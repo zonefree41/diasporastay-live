@@ -1,234 +1,264 @@
-// src/hotels/Hotel.jsx
+// src/pages/Hotel.jsx
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import api from "../axios";
+import { useParams, useNavigate } from "react-router-dom";
 
-// Airbnb-style date range picker
-import { DateRange } from "react-date-range";
-import "react-date-range/dist/styles.css";
-import "react-date-range/dist/theme/default.css";
+/* ======================
+   DATE HELPERS
+====================== */
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+const isSameDay = (a, b) =>
+    a && b && a.toDateString() === b.toDateString();
+
+const daysInMonth = (year, month) => {
+    const first = new Date(year, month, 1);
+    const last = new Date(year, month + 1, 0);
+    const days = [];
+
+    for (let i = 0; i < first.getDay(); i++) days.push(null);
+    for (let d = 1; d <= last.getDate(); d++) {
+        days.push(new Date(year, month, d));
+    }
+    return days;
+};
 
 export default function Hotel() {
-    const API = import.meta.env.VITE_API_BASE || "http://localhost:5000";
     const { id } = useParams();
+    const navigate = useNavigate();
 
     const [hotel, setHotel] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [activeImg, setActiveImg] = useState(0);
+    const [blockedDates, setBlockedDates] = useState([]);
 
-    // Date range state
-    const [dateRange, setDateRange] = useState([
-        {
-            startDate: new Date(),
-            endDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
-            key: "selection",
-        },
-    ]);
+    const [checkIn, setCheckIn] = useState(null);
+    const [checkOut, setCheckOut] = useState(null);
+    const [nights, setNights] = useState(0);
+    const [total, setTotal] = useState(0);
 
-    const [nights, setNights] = useState(1);
-    const [totalPrice, setTotalPrice] = useState(0);
+    const now = new Date();
+    const [year, setYear] = useState(now.getFullYear());
+    const [month, setMonth] = useState(now.getMonth());
 
-    /* =======================================
-       LOAD HOTEL + AVAILABILITY
-    ======================================= */
+    const days = daysInMonth(year, month);
+
+    /* ======================
+       LOAD HOTEL
+    ====================== */
     useEffect(() => {
         const loadHotel = async () => {
-            try {
-                const res = await api.get(`/api/hotels/${id}`);
-                setHotel(res.data);
-
-                // Initialize total price once hotel is known
-                const diffMs =
-                    dateRange[0].endDate.getTime() -
-                    dateRange[0].startDate.getTime();
-                const nightsCalc = Math.max(
-                    1,
-                    Math.round(diffMs / (1000 * 60 * 60 * 24))
-                );
-                setNights(nightsCalc);
-                setTotalPrice(nightsCalc * res.data.pricePerNight);
-            } catch (err) {
-                console.error("Hotel fetch error:", err);
-            } finally {
-                setLoading(false);
-            }
+            const res = await fetch(`/api/hotels/${id}`);
+            const data = await res.json();
+            setHotel(data);
         };
-
         loadHotel();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
-    /* =======================================
-       HANDLE DATE CHANGE
-    ======================================= */
-    const handleDateChange = (item) => {
-        const sel = item.selection;
-        setDateRange([sel]);
+    /* ======================
+       LOAD AVAILABILITY
+    ====================== */
+    useEffect(() => {
+        const loadAvailability = async () => {
+            const res = await fetch(`/api/hotels/${id}/availability`);
+            const data = await res.json();
 
-        if (!hotel) return;
+            setBlockedDates(
+                (data.blockedDates || []).map((d) => new Date(d))
+            );
+        };
+        loadAvailability();
+    }, [id]);
 
-        const diffMs =
-            sel.endDate.getTime() - sel.startDate.getTime();
-        const nightsCalc = Math.max(
-            1,
-            Math.round(diffMs / (1000 * 60 * 60 * 24))
-        );
+    /* ======================
+       CALCULATE TOTAL
+    ====================== */
+    useEffect(() => {
+        if (checkIn && checkOut && hotel) {
+            const diff =
+                (checkOut.getTime() - checkIn.getTime()) /
+                (1000 * 60 * 60 * 24);
 
-        setNights(nightsCalc);
-        setTotalPrice(nightsCalc * hotel.pricePerNight);
+            if (diff > 0) {
+                setNights(diff);
+                setTotal(diff * hotel.pricePerNight);
+            } else {
+                setNights(0);
+                setTotal(0);
+            }
+        }
+    }, [checkIn, checkOut, hotel]);
+
+    /* ======================
+       AVAILABILITY CHECKS
+    ====================== */
+    const isBlocked = (date) =>
+        blockedDates.some((d) => isSameDay(d, date));
+
+    const rangeHasBlocked = (start, end) => {
+        for (
+            let d = new Date(start);
+            d < end;
+            d.setDate(d.getDate() + 1)
+        ) {
+            if (isBlocked(d)) return true;
+        }
+        return false;
     };
 
-    /* =======================================
-       DISABLED DATES (UNAVAILABLE)
-    ======================================= */
-    const disabledDates = (hotel?.unavailableDates || []).map(
-        (d) => new Date(d)
-    );
+    /* ======================
+       SELECT DATE
+    ====================== */
+    const selectDate = (date) => {
+        if (!date || date < today || isBlocked(date)) return;
 
-    /* =======================================
-       BOOK BUTTON (NEXT STEP → Stripe)
-    ======================================= */
-    const handleBookNow = async () => {
-        try {
-            const guestId = localStorage.getItem("guestId");
-
-            if (!guestId) {
-                alert("Please log in to book.");
+        if (!checkIn || (checkIn && checkOut)) {
+            setCheckIn(date);
+            setCheckOut(null);
+            setTotal(0);
+            setNights(0);
+        } else if (date > checkIn) {
+            if (rangeHasBlocked(checkIn, date)) {
+                alert("Selected range contains unavailable dates");
                 return;
             }
-
-            const res = await api.post("/api/bookings/create-checkout", {
-                hotelId: hotel._id,
-                guestId,
-                checkIn: dateRange[0].startDate,
-                checkOut: dateRange[0].endDate,
-                nights,
-                totalPrice
-            });
-
-            // Redirect user to Stripe Checkout
-            window.location.href = res.data.url;
-
-        } catch (err) {
-            console.error("Booking error:", err.response?.data);
-            alert("Unable to start booking.");
+            setCheckOut(date);
         }
     };
 
+    /* ======================
+       BOOKING
+    ====================== */
+    const handleReserve = async () => {
+        const token = localStorage.getItem("guestToken");
+        const guestId = localStorage.getItem("guestId");
 
-    if (loading) return <div className="page-loading">Loading hotel...</div>;
-    if (!hotel) return <div className="page-loading">Hotel not found.</div>;
+        if (!token || !guestId) {
+            navigate("/guest/login");
+            return;
+        }
+
+        if (!checkIn || !checkOut || nights <= 0) {
+            alert("Please select valid dates");
+            return;
+        }
+
+        const res = await fetch("/api/bookings/create-checkout", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                hotelId: hotel._id,
+                guestId,
+                checkIn: checkIn.toISOString(),
+                checkOut: checkOut.toISOString(),
+                nights,
+                totalPrice: total,
+            }),
+        });
+
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+    };
+
+    if (!hotel) return <p style={{ padding: 40 }}>Loading…</p>;
 
     return (
-        <div className="page-section fade-in">
-            <div className="container" style={{ maxWidth: "1200px" }}>
-                {/* HOTEL NAME & LOCATION */}
-                <div className="mb-4">
-                    <h1 className="fw-bold">{hotel.name}</h1>
-                    <p className="text-muted">
-                        {hotel.city}, {hotel.country}
-                    </p>
+        <div style={{ maxWidth: 1000, margin: "40px auto", padding: 20 }}>
+            <h1>{hotel.name}</h1>
+            <p>{hotel.city}, {hotel.country}</p>
+
+            <h2 style={{ marginTop: 20 }}>
+                ${hotel.pricePerNight} <span style={{ fontSize: 14 }}>/ night</span>
+            </h2>
+
+            {/* CALENDAR */}
+            <div style={{ marginTop: 30 }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <button onClick={() => setMonth((m) => m - 1)}>‹</button>
+                    <strong>
+                        {new Date(year, month).toLocaleString("default", {
+                            month: "long",
+                            year: "numeric",
+                        })}
+                    </strong>
+                    <button onClick={() => setMonth((m) => m + 1)}>›</button>
                 </div>
 
-                {/* IMAGE GALLERY */}
-                <div className="hotel-gallery">
-                    <div className="hero-img-wrapper">
-                        <img
-                            src={hotel.images[activeImg]}
-                            className="hero-img"
-                            alt="Hotel"
-                        />
-                    </div>
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(7, 1fr)",
+                        gap: 6,
+                        marginTop: 10,
+                    }}
+                >
+                    {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                        <div key={`${d}-${i}`}>{d}</div>
+                    ))}
 
-                    <div className="thumb-row">
-                        {hotel.images.map((img, i) => (
+                    {days.map((date, i) => {
+                        if (!date) return <div key={i} />;
+
+                        const disabled =
+                            date < today || isBlocked(date);
+
+                        const selected =
+                            isSameDay(date, checkIn) ||
+                            isSameDay(date, checkOut);
+
+                        return (
                             <div
                                 key={i}
-                                className={`thumb-wrapper ${activeImg === i ? "active" : ""
-                                    }`}
-                                onClick={() => setActiveImg(i)}
+                                onClick={() => selectDate(date)}
+                                style={{
+                                    height: 42,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    borderRadius: "50%",
+                                    cursor: disabled ? "not-allowed" : "pointer",
+                                    background: isBlocked(date)
+                                        ? "#fee2e2"
+                                        : selected
+                                            ? "#2563eb"
+                                            : "transparent",
+                                    color: isBlocked(date)
+                                        ? "#991b1b"
+                                        : selected
+                                            ? "#fff"
+                                            : "#111",
+                                }}
                             >
-                                <img src={img} alt="thumb" className="thumb-img" />
+                                {date.getDate()}
                             </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* CONTENT */}
-                <div className="row mt-4 g-4">
-                    {/* LEFT CONTENT */}
-                    <div className="col-lg-8">
-                        {/* DESCRIPTION */}
-                        <div className="card shadow-sm mb-4">
-                            <div className="card-body">
-                                <h4 className="fw-bold mb-3">About this stay</h4>
-                                <p className="text-muted">{hotel.description}</p>
-                            </div>
-                        </div>
-
-                        {/* AMENITIES */}
-                        <div className="card shadow-sm mb-4">
-                            <div className="card-body">
-                                <h4 className="fw-bold mb-3">Amenities</h4>
-
-                                <div className="amenities-grid">
-                                    {hotel.amenities.map((a, i) => (
-                                        <div key={i} className="amenity-item">
-                                            <i className="bi bi-check-circle-fill text-primary me-2"></i>
-                                            {a}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* RIGHT SIDEBAR — BOOKING BOX */}
-                    <div className="col-lg-4">
-                        <div className="booking-box card shadow-sm">
-                            <div className="card-body">
-                                <h5 className="fw-bold mb-3">Select your stay</h5>
-
-                                {/* Date range picker */}
-                                <DateRange
-                                    ranges={dateRange}
-                                    onChange={handleDateChange}
-                                    moveRangeOnFirstSelection={false}
-                                    minDate={new Date()}
-                                    disabledDates={disabledDates}
-                                    rangeColors={["#4A3AFF"]}
-                                />
-
-                                {/* Price summary */}
-                                <div className="mt-3">
-                                    <div className="d-flex justify-content-between">
-                                        <span className="text-muted">
-                                            ${hotel.pricePerNight} x {nights} night
-                                            {nights > 1 ? "s" : ""}
-                                        </span>
-                                        <span className="fw-semibold">
-                                            ${totalPrice.toFixed(2)}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <button
-                                    className="btn btn-primary w-100 py-2 mt-3"
-                                    onClick={handleBookNow}
-                                    disabled={nights <= 0}
-                                >
-                                    Continue to payment
-                                </button>
-
-                                <p className="small text-muted mt-2">
-                                    You won’t be charged yet — you’ll confirm your
-                                    booking on the payment step.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
             </div>
+
+            {/* TOTAL */}
+            <div style={{ marginTop: 20, fontSize: 18 }}>
+                Total: <strong>${total}</strong>
+            </div>
+
+            <button
+                onClick={handleReserve}
+                style={{
+                    marginTop: 20,
+                    padding: 14,
+                    width: "100%",
+                    borderRadius: 12,
+                    border: "none",
+                    background: "#2563eb",
+                    color: "#fff",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                }}
+            >
+                Reserve
+            </button>
         </div>
     );
 }

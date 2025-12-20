@@ -1,13 +1,14 @@
-import Stripe from "stripe";
+// backend/controllers/stripeController.js
 import Booking from "../models/Booking.js";
 import Hotel from "../models/Hotel.js";
+import stripe from "../config/stripe.js";
+
 
 // ✅ DEFINE FIRST (TOP OF FILE)
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
 console.log("🔁 STRIPE REDIRECT URL IN USE:", FRONTEND_URL);
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /**
  * @desc   Create Stripe Checkout Session

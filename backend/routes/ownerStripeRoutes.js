@@ -1,11 +1,11 @@
 // backend/routes/ownerStripeRoutes.js
 import express from "express";
-import Stripe from "stripe";
 import { ownerAuth } from "../middleware/ownerAuth.js";
 import Owner from "../models/Owner.js";
+import stripe from "../config/stripe.js";
+
 
 const router = express.Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /**
  * POST /api/owner/stripe/connect-link

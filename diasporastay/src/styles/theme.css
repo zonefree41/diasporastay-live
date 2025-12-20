@@ -2534,3 +2534,115 @@ body {
     margin-bottom: 15px;
     border-radius: 8px;
 }
+
+/* 🚫 prevent inline calendar layout */
+.react-datepicker {
+    display: block;
+}
+
+/* 🎨 make it look premium */
+.stay-date-box {
+    background: white;
+    padding: 20px;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .1);
+}
+
+.stay-date-input {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid #ddd;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+/* ===============================
+   DATE PICKER — PREMIUM FIX
+================================ */
+
+.react-datepicker {
+    display: block;
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    font-family: inherit;
+}
+
+.react-datepicker__month-container {
+    padding: 10px;
+}
+
+.react-datepicker__day {
+    width: 38px;
+    line-height: 38px;
+    margin: 4px;
+    border-radius: 50%;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--in-range {
+    background-color: #2f6ffb;
+    color: white;
+}
+
+.react-datepicker__day--keyboard-selected {
+    background-color: rgba(47, 111, 251, 0.2);
+}
+
+.react-datepicker__header {
+    background: white;
+    border-bottom: none;
+}
+
+.react-datepicker__current-month {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+/* Prevent vertical inline calendar bug */
+.react-datepicker-inline {
+    display: none !important;
+}
+
+/* Input styling */
+.stay-date-input {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid #ddd;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.amenities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.amenity-item {
+    font-size: 14px;
+    color: #333;
+}
+
+/* ===============================
+   OWNER HOTEL IMAGE FIX
+================================ */
+
+.hotel-image-wrapper {
+    width: 100%;
+    height: 180px;
+    /* 👈 controls size */
+    overflow: hidden;
+    border-radius: 14px;
+    background: #f1f3f5;
+}
+
+.hotel-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* 👈 prevents stretching */
+    display: block;
+}

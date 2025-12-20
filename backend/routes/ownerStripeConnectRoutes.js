@@ -1,5 +1,3 @@
-console.log("🔥 ownerStripeConnectRoutes loaded");
-
 import express from "express";
 import {
     createStripeAccount,
@@ -10,7 +8,7 @@ import { protectOwner } from "../middleware/protectOwner.js";
 
 const router = express.Router();
 
-// ✅ Create Stripe account
+// Create Stripe account
 router.post(
     "/create-account",
     protectOwner,
@@ -21,14 +19,14 @@ router.post(
     createStripeAccount
 );
 
-// ✅ Create onboarding link
+// Create onboarding link
 router.post(
     "/onboarding-link",
     protectOwner,
     createOnboardingLink
 );
 
-// ✅ Check Stripe status
+// Check Stripe status
 router.get(
     "/status",
     protectOwner,

@@ -7,13 +7,17 @@ const router = express.Router();
 router.get("/:id", async (req, res) => {
     try {
         const hotel = await Hotel.findById(req.params.id);
-        if (!hotel) return res.status(404).json({ error: "Hotel not found" });
 
-        res.json(hotel);
+        if (!hotel) {
+            return res.status(404).json({ message: "Hotel not found" });
+        }
+
+        res.json(hotel); // ✅ includes blockedDates
     } catch (err) {
-        console.error("Public hotel fetch error:", err);
-        res.status(500).json({ error: "Failed to fetch hotel" });
+        console.error("PUBLIC HOTEL LOAD ERROR:", err);
+        res.status(500).json({ message: "Failed to load hotel" });
     }
 });
+
 
 export default router;

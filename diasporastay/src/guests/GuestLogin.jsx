@@ -22,36 +22,43 @@ export default function GuestLogin() {
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setError("");
-        setSuccess("");
+        setLoading(true);
 
         try {
-            setLoading(true);
-
-            const res = await api.post("/api/guests/login", {
-                email,
-                password,
+            const res = await fetch("/api/guests/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
             });
 
-            // ⭐ FIXED — use _id
-            localStorage.setItem("guestToken", res.data.token);
-            localStorage.setItem("guestEmail", res.data.guest.email);
-            localStorage.setItem("guestId", res.data.guest._id);
+            const data = await res.json();
 
-            setSuccess("Login successful! Redirecting...");
+            if (!res.ok) {
+                throw new Error(data.message || "Login failed");
+            }
 
-            // Let navbar update BEFORE redirect
+            // ✅ SAVE GUEST SESSION (CRITICAL)
+            localStorage.setItem("guestToken", data.token);
+            localStorage.setItem("guestEmail", data.guest.email);
+            localStorage.setItem("guestId", data.guest._id);
+
+            // ✅ REMOVE OWNER SESSION (IMPORTANT)
+            localStorage.removeItem("ownerToken");
+            localStorage.removeItem("ownerEmail");
+
+            // 🔁 Sync navbar + guards
             window.dispatchEvent(new Event("navbarUpdate"));
 
-            setTimeout(() => navigate("/guest/profile"), 1200);
+            // ✅ Redirect AFTER storage
+            navigate("/guest/profile");
 
         } catch (err) {
-            setError(err.response?.data?.message || "Invalid email or password.");
+            console.error("GUEST LOGIN ERROR:", err.message);
+            alert(err.message);
         } finally {
             setLoading(false);
         }
     };
-
 
     return (
         <div className="auth-wrapper d-flex justify-content-center align-items-center py-5">

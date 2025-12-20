@@ -19,36 +19,36 @@ export default function OwnerLogin() {
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setError("");
+        setLoading(true);
 
         try {
-            setLoading(true);
-
-            // ⭐⭐⭐ CORRECT API CALL
-            const res = await api.post("/api/owner/auth/login", {
-                email,
-                password,
+            const res = await fetch("/api/owner/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
             });
 
-            const token = res.data.token;
+            // ✅ Always parse safely
+            const data = await res.json().catch(() => ({}));
 
-            // ⭐ SAVE OWNER INFO
-            localStorage.setItem("ownerToken", token);
-            localStorage.setItem("ownerEmail", res.data.owner.email);
-            localStorage.setItem("ownerId", res.data.owner.id);
+            if (!res.ok) {
+                throw new Error(data.message || "Login failed");
+            }
 
-            // Sync navbar
+            // ✅ SAVE OWNER SESSION
+            localStorage.setItem("ownerToken", data.token);
+            localStorage.setItem("ownerEmail", data.email);
+
+            // ✅ CLEAR GUEST SESSION (IMPORTANT)
+            localStorage.removeItem("guestToken");
+            localStorage.removeItem("guestEmail");
+
             window.dispatchEvent(new Event("navbarUpdate"));
-
             navigate("/owner/dashboard");
-        } catch (err) {
-            console.error("LOGIN ERROR:", err.response?.data);
 
-            setError(
-                err.response?.data?.message ||
-                err.response?.data?.error ||
-                "Invalid email or password."
-            );
+        } catch (err) {
+            console.error("LOGIN ERROR:", err.message);
+            alert(err.message);
         } finally {
             setLoading(false);
         }

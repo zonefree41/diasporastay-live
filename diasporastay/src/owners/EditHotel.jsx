@@ -1,297 +1,323 @@
-// src/owners/EditHotel.jsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../axios";
-import OwnerLayout from "./OwnerLayout";
 
-const API = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+/* ================= STYLES ================= */
+
+const page = { maxWidth: 1200, margin: "40px auto", padding: 20 };
+const title = { fontSize: 30, fontWeight: 800, marginBottom: 20 };
+
+const toggleWrap = { display: "flex", gap: 10, marginBottom: 20 };
+const toggleBtn = {
+    flex: 1,
+    padding: 10,
+    borderRadius: 10,
+    border: "none",
+    fontWeight: 700,
+    cursor: "pointer",
+};
+
+const layout = {
+    display: "grid",
+    gridTemplateColumns: "1fr 380px",
+    gap: 30,
+};
+
+const form = { display: "flex", flexDirection: "column", gap: 24 };
+
+const section = {
+    background: "#fff",
+    borderRadius: 20,
+    padding: 24,
+    boxShadow: "0 8px 30px rgba(0,0,0,.06)",
+};
+
+const sectionTitle = {
+    fontSize: 18,
+    fontWeight: 700,
+    marginBottom: 16,
+};
+
+const input = {
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    border: "1px solid #d1d5db",
+};
+
+const row = { display: "flex", gap: 12 };
+
+const imageGrid = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+    gap: 10,
+};
+
+const imageWrap = { position: "relative" };
+const image = { width: "100%", height: 80, objectFit: "cover", borderRadius: 10 };
+
+const removeBtn = {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    background: "#ef4444",
+    color: "#fff",
+    border: "none",
+    borderRadius: "50%",
+    width: 22,
+    height: 22,
+    cursor: "pointer",
+};
+
+const uploadBox = {
+    padding: 16,
+    border: "2px dashed #d1d5db",
+    borderRadius: 14,
+    textAlign: "center",
+    cursor: "pointer",
+    fontWeight: 600,
+};
+
+const saveBtn = {
+    padding: 16,
+    borderRadius: 16,
+    background: "#2563eb",
+    color: "#fff",
+    border: "none",
+    fontWeight: 700,
+    cursor: "pointer",
+};
+
+const previewWrap = { position: "sticky", top: 20 };
+
+const explorePreviewWrap = { transition: "all .25s ease" };
+
+const exploreCard = {
+    background: "#fff",
+    borderRadius: 16,
+    overflow: "hidden",
+    boxShadow: "0 10px 30px rgba(0,0,0,.12)",
+};
+
+const exploreImage = { width: "100%", height: 160, objectFit: "cover" };
+const exploreBody = { padding: 14 };
+const exploreLocation = { color: "#6b7280", fontSize: 13 };
+const exploreMin = { fontSize: 12, color: "#6b7280" };
+
+const ratingRow = { display: "flex", alignItems: "center", gap: 6 };
+const ratingStar = { color: "#f59e0b" };
+const ratingValue = { fontWeight: 700 };
+const ratingReviews = { fontSize: 12, color: "#6b7280" };
+
+const availabilityWrap = {
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 16,
+    background: "#f9fafb",
+};
+
+const availabilityGrid = {
+    display: "grid",
+    gridTemplateColumns: "repeat(7, 1fr)",
+    gap: 6,
+};
+
+const availabilityDay = {
+    padding: "8px 0",
+    borderRadius: 8,
+    fontSize: 11,
+    textAlign: "center",
+    fontWeight: 600,
+};
+
+/* ================= COMPONENT ================= */
 
 export default function EditHotel() {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const [hotel, setHotel] = useState(null);
+    const [previewMode, setPreviewMode] = useState("desktop");
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
     const [name, setName] = useState("");
     const [city, setCity] = useState("");
     const [country, setCountry] = useState("");
-    const [pricePerNight, setPricePerNight] = useState("");
     const [description, setDescription] = useState("");
-    const [amenities, setAmenities] = useState([]);
-    const [images, setImages] = useState([]);
+    const [pricePerNight, setPricePerNight] = useState("");
+    const [minNights, setMinNights] = useState(2);
 
-    const [newImages, setNewImages] = useState([]); // files to upload
-    const [previewImages, setPreviewImages] = useState([]); // local previews
-
-    const [error, setError] = useState("");
-    const [saving, setSaving] = useState(false);
-
-    /* ====================================================================
-       LOAD HOTEL DATA
-    ==================================================================== */
-    const loadHotel = async () => {
-        try {
-            const token = localStorage.getItem("ownerToken");
-
-            const res = await api.get(`/api/owner/hotels/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            const h = res.data;
-            setHotel(h);
-
-            setName(h.name);
-            setCity(h.city);
-            setCountry(h.country);
-            setPricePerNight(h.pricePerNight);
-            setDescription(h.description);
-            setAmenities(h.amenities || []);
-            setImages(h.images || []);
-
-        } catch (err) {
-            console.error("❌ Load hotel error:", err.response?.data);
-            setError("Failed to load hotel.");
-        } finally {
-            setLoading(false);
-        }
-    };
+    const [existingImages, setExistingImages] = useState([]);
+    const [newImages, setNewImages] = useState([]);
 
     useEffect(() => {
         loadHotel();
     }, []);
 
-    /* ====================================================================
-       IMAGE UPLOAD TO CLOUDINARY
-    ==================================================================== */
-    const handleImageUpload = (e) => {
-        const files = Array.from(e.target.files);
-        setNewImages(files);
+    const loadHotel = async () => {
+        try {
+            const token = localStorage.getItem("ownerToken");
+            const res = await fetch(`/api/owner/hotels/${id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json();
 
-        const previews = files.map((file) => URL.createObjectURL(file));
-        setPreviewImages(previews);
-    };
-
-    const uploadToCloudinary = async () => {
-        if (newImages.length === 0) return [];
-
-        const uploadedUrls = [];
-
-        for (let img of newImages) {
-            const formData = new FormData();
-            formData.append("file", img);
-            formData.append("upload_preset", "diasporastay"); // change if needed
-
-            const uploadRes = await fetch(
-                "https://api.cloudinary.com/v1_1/diasporastay/image/upload",
-                { method: "POST", body: formData }
-            );
-
-            const data = await uploadRes.json();
-            uploadedUrls.push(data.secure_url);
+            setName(data.name);
+            setCity(data.city);
+            setCountry(data.country);
+            setDescription(data.description || "");
+            setPricePerNight(data.pricePerNight);
+            setMinNights(data.minNights || 2);
+            setExistingImages(data.images || []);
+        } catch {
+            alert("Failed to load hotel");
+        } finally {
+            setLoading(false);
         }
-
-        return uploadedUrls;
     };
 
-    /* ====================================================================
-       SAVE HOTEL CHANGES
-    ==================================================================== */
-    const handleSave = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
-        setError("");
 
         try {
             const token = localStorage.getItem("ownerToken");
+            const formData = new FormData();
 
-            // Upload new images if selected
-            const newImageUrls = await uploadToCloudinary();
+            formData.append("name", name);
+            formData.append("city", city);
+            formData.append("country", country);
+            formData.append("description", description);
+            formData.append("pricePerNight", pricePerNight);
+            formData.append("minNights", minNights);
+            formData.append("existingImages", JSON.stringify(existingImages));
 
-            const payload = {
-                name,
-                city,
-                country,
-                pricePerNight,
-                description,
-                amenities,
-                images: [...images, ...newImageUrls],
-            };
+            Array.from(newImages).forEach((f) => formData.append("images", f));
 
-            await api.put(`/api/owner/hotels/${id}`, payload, {
+            await fetch(`/api/owner/hotels/${id}`, {
+                method: "PUT",
                 headers: { Authorization: `Bearer ${token}` },
+                body: formData,
             });
 
-            alert("Hotel updated successfully!");
             navigate("/owner/my-hotels");
-
-        } catch (err) {
-            console.error("❌ Save hotel error:", err.response?.data);
-            setError("Failed to update hotel.");
+        } catch {
+            alert("Update failed");
         } finally {
             setSaving(false);
         }
     };
 
-    /* ====================================================================
-       AMENITIES HANDLER
-    ==================================================================== */
-    const toggleAmenity = (item) => {
-        if (amenities.includes(item)) {
-            setAmenities(amenities.filter((a) => a !== item));
-        } else {
-            setAmenities([...amenities, item]);
-        }
-    };
+    if (loading) return <p style={{ padding: 40 }}>Loading…</p>;
 
-    if (loading) {
-        return (
-            <OwnerLayout>
-                <p className="text-muted">Loading hotel...</p>
-            </OwnerLayout>
-        );
-    }
-
-    if (!hotel) {
-        return (
-            <OwnerLayout>
-                <p className="text-danger">Hotel not found.</p>
-            </OwnerLayout>
-        );
-    }
-
-    /* ====================================================================
-       RENDER UI
-    ==================================================================== */
     return (
-        <OwnerLayout>
-            <h3 className="fw-bold mb-4">Edit Hotel</h3>
+        <div style={page}>
+            <h1 style={title}>Edit Hotel</h1>
 
-            {error && <div className="alert alert-danger">{error}</div>}
+            <div style={toggleWrap}>
+                <button
+                    onClick={() => setPreviewMode("desktop")}
+                    style={{
+                        ...toggleBtn,
+                        background: previewMode === "desktop" ? "#2563eb" : "#e5e7eb",
+                        color: previewMode === "desktop" ? "#fff" : "#111",
+                    }}
+                >
+                    🖥 Desktop
+                </button>
+                <button
+                    onClick={() => setPreviewMode("mobile")}
+                    style={{
+                        ...toggleBtn,
+                        background: previewMode === "mobile" ? "#2563eb" : "#e5e7eb",
+                        color: previewMode === "mobile" ? "#fff" : "#111",
+                    }}
+                >
+                    📱 Mobile
+                </button>
+            </div>
 
-            <form onSubmit={handleSave}>
-
-                {/* NAME */}
-                <div className="mb-3">
-                    <label className="fw-semibold">Hotel Name</label>
-                    <input
-                        className="form-control"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                    />
-                </div>
-
-                {/* CITY */}
-                <div className="mb-3">
-                    <label className="fw-semibold">City</label>
-                    <input
-                        className="form-control"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        required
-                    />
-                </div>
-
-                {/* COUNTRY */}
-                <div className="mb-3">
-                    <label className="fw-semibold">Country</label>
-                    <input
-                        className="form-control"
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
-                        required
-                    />
-                </div>
-
-                {/* PRICE */}
-                <div className="mb-3">
-                    <label className="fw-semibold">Price / Night ($)</label>
-                    <input
-                        type="number"
-                        className="form-control"
-                        value={pricePerNight}
-                        onChange={(e) => setPricePerNight(e.target.value)}
-                        required
-                    />
-                </div>
-
-                {/* DESCRIPTION */}
-                <div className="mb-3">
-                    <label className="fw-semibold">Description</label>
-                    <textarea
-                        className="form-control"
-                        rows="4"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        required
-                    ></textarea>
-                </div>
-
-                {/* AMENITIES */}
-                <div className="mb-4">
-                    <label className="fw-semibold d-block mb-2">Amenities</label>
-                    {["Wifi", "Breakfast", "Parking", "Pool", "Gym"].map((amen) => (
-                        <div key={amen} className="form-check">
-                            <input
-                                type="checkbox"
-                                className="form-check-input"
-                                checked={amenities.includes(amen)}
-                                onChange={() => toggleAmenity(amen)}
-                            />
-                            <label className="form-check-label">{amen}</label>
+            <div style={layout}>
+                <form onSubmit={handleSubmit} style={form}>
+                    <div style={section}>
+                        <h3 style={sectionTitle}>Basic Info</h3>
+                        <input style={input} value={name} onChange={(e) => setName(e.target.value)} />
+                        <div style={row}>
+                            <input style={input} value={city} onChange={(e) => setCity(e.target.value)} />
+                            <input style={input} value={country} onChange={(e) => setCountry(e.target.value)} />
                         </div>
-                    ))}
-                </div>
+                    </div>
 
-                {/* EXISTING IMAGES */}
-                <label className="fw-semibold">Existing Images</label>
-                <div className="d-flex gap-3 mb-3 flex-wrap">
-                    {images.map((img, i) => (
-                        <img
-                            key={i}
-                            src={img}
-                            alt="hotel"
-                            className="rounded"
-                            style={{ width: "120px", height: "90px", objectFit: "cover" }}
-                        />
-                    ))}
-                </div>
+                    <div style={section}>
+                        <h3 style={sectionTitle}>Pricing</h3>
+                        <div style={row}>
+                            <input style={input} type="number" value={pricePerNight} onChange={(e) => setPricePerNight(e.target.value)} />
+                            <input style={input} type="number" value={minNights} onChange={(e) => setMinNights(e.target.value)} />
+                        </div>
+                    </div>
 
-                {/* NEW IMAGES */}
-                <div className="mb-4">
-                    <label className="fw-semibold">Upload More Images</label>
-                    <input
-                        type="file"
-                        multiple
-                        className="form-control"
-                        onChange={handleImageUpload}
-                    />
-
-                    {/* Preview */}
-                    {previewImages.length > 0 && (
-                        <div className="d-flex gap-3 mt-3 flex-wrap">
-                            {previewImages.map((img, i) => (
-                                <img
-                                    key={i}
-                                    src={img}
-                                    style={{
-                                        width: "120px",
-                                        height: "90px",
-                                        objectFit: "cover",
-                                        borderRadius: "8px",
-                                    }}
-                                />
+                    <div style={section}>
+                        <h3 style={sectionTitle}>Photos</h3>
+                        <div style={imageGrid}>
+                            {existingImages.map((img) => (
+                                <div key={img} style={imageWrap}>
+                                    <img src={img} style={image} />
+                                    <button type="button" style={removeBtn} onClick={() => setExistingImages(existingImages.filter((i) => i !== img))}>×</button>
+                                </div>
                             ))}
                         </div>
-                    )}
-                </div>
+                        <label style={uploadBox}>
+                            + Add photos
+                            <input type="file" multiple hidden onChange={(e) => setNewImages(e.target.files)} />
+                        </label>
+                    </div>
 
-                {/* BUTTON */}
-                <button className="btn btn-primary mt-3" disabled={saving}>
-                    {saving ? "Saving..." : "Save Changes"}
-                </button>
-            </form>
-        </OwnerLayout>
+                    <button disabled={saving} style={saveBtn}>
+                        {saving ? "Saving…" : "Save Changes"}
+                    </button>
+                </form>
+
+                <div style={previewWrap}>
+                    <div
+                        style={{
+                            ...explorePreviewWrap,
+                            width: previewMode === "mobile" ? 320 : "100%",
+                            margin: "0 auto",
+                        }}
+                    >
+                        <div style={exploreCard}>
+                            <img src={existingImages[0]} style={exploreImage} />
+                            <div style={exploreBody}>
+                                <div style={ratingRow}>
+                                    <span style={ratingStar}>★</span>
+                                    <span style={ratingValue}>4.8</span>
+                                    <span style={ratingReviews}>(32 reviews)</span>
+                                </div>
+                                <h4>{name}</h4>
+                                <p style={exploreLocation}>{city}, {country}</p>
+                                <strong>${pricePerNight}</strong> / night
+                                <p style={exploreMin}>Min {minNights} nights</p>
+                            </div>
+                        </div>
+
+                        <div style={availabilityWrap}>
+                            <div style={availabilityGrid}>
+                                {Array.from({ length: 14 }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        style={{
+                                            ...availabilityDay,
+                                            background: i % 5 === 0 ? "#fee2e2" : "#dcfce7",
+                                        }}
+                                    >
+                                        {i % 5 === 0 ? "Blocked" : "Available"}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

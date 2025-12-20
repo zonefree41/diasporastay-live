@@ -1,92 +1,193 @@
 // src/pages/MyBookings.jsx
 import { useEffect, useState } from "react";
-import api from "../axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function MyBookings() {
-    const [bookings, setBookings] = useState([]);
+    const navigate = useNavigate();
+    const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const guestId = localStorage.getItem("guestId");
-
-    const loadBookings = async () => {
-        try {
-            const res = await api.get(`/api/bookings/guest/${guestId}`);
-            setBookings(res.data);
-        } catch (err) {
-            console.error("❌ Load guest bookings error:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const token = localStorage.getItem("guestToken");
 
     useEffect(() => {
-        loadBookings();
-    }, []);
+        if (!token) {
+            navigate("/guest/login");
+            return;
+        }
 
-    if (loading) return <div className="container py-5">Loading bookings...</div>;
+        const load = async () => {
+            try {
+                const res = await fetch("/api/bookings/my", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data?.message || "Failed to load bookings");
+                setItems(data);
+            } catch (e) {
+                alert(e.message);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    if (!bookings.length)
+        load();
+    }, [token, navigate]);
+
+    if (loading) return <p style={{ padding: 40 }}>Loading…</p>;
+
+    if (!items.length) {
         return (
-            <div className="container py-5 text-center">
-                <h3>No bookings yet</h3>
-                <p className="text-muted">Start exploring stays today.</p>
-                <Link className="btn btn-primary" to="/explore">
-                    Browse Hotels
-                </Link>
+            <div style={wrap}>
+                <h2 style={{ margin: 0 }}>No bookings yet</h2>
+                <p style={{ color: "#6b7280" }}>Start exploring stays today.</p>
+                <Link to="/explore" style={btn}>Explore</Link>
             </div>
         );
+    }
 
     return (
-        <div className="container py-4">
-            <h2 className="fw-bold mb-4">My Bookings</h2>
+        <div style={page}>
+            <h1 style={title}>My Bookings</h1>
 
-            <div className="row g-4">
-                {bookings.map((b) => (
-                    <div className="col-md-6" key={b._id}>
-                        <div className="card shadow-sm booking-card">
+            <div style={grid}>
+                {items.map((b) => {
+                    const snap = b.hotelSnapshot || {};
+                    const hero = snap.images?.[0];
 
-                            <img
-                                src={b.hotelSnapshot.images?.[0]}
-                                className="booking-img"
-                                alt="hotel"
-                            />
+                    return (
+                        <div key={b._id} style={card}>
+                            {hero && <img src={hero} alt="" style={img} />}
 
-                            <div className="card-body">
-
-                                <h4 className="fw-bold">{b.hotelSnapshot.name}</h4>
-                                <p className="text-muted mb-1">
-                                    {b.hotelSnapshot.city}, {b.hotelSnapshot.country}
-                                </p>
-
-                                <div className="mt-3">
-                                    <p><strong>Check-in:</strong> {b.checkIn.slice(0, 10)}</p>
-                                    <p><strong>Check-out:</strong> {b.checkOut.slice(0, 10)}</p>
-                                    <p><strong>Nights:</strong> {b.nights}</p>
-
-                                    <h5 className="fw-bold mt-2">${b.totalPrice}</h5>
+                            <div style={{ padding: 14 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                                    <div style={{ fontWeight: 900 }}>{snap.name || "Hotel"}</div>
+                                    <span style={badge(b.status)}>{b.status}</span>
                                 </div>
 
-                                <span
-                                    className={`badge mt-2 ${b.paymentStatus === "paid"
-                                            ? "bg-success"
-                                            : b.paymentStatus === "pending"
-                                                ? "bg-warning text-dark"
-                                                : "bg-danger"
-                                        }`}
-                                >
-                                    {b.paymentStatus.toUpperCase()}
-                                </span>
+                                <div style={muted}>
+                                    {snap.city}, {snap.country}
+                                </div>
+
+                                <div style={{ marginTop: 10, fontWeight: 800 }}>
+                                    {new Date(b.checkIn).toLocaleDateString()} →{" "}
+                                    {new Date(b.checkOut).toLocaleDateString()}
+                                </div>
+
+                                <div style={{ marginTop: 6, fontWeight: 900 }}>
+                                    Total: ${Number(b.totalPrice || 0).toFixed(2)}
+                                </div>
+
+                                {/* ACTIONS */}
+                                <div style={actions}>
+                                    <button
+                                        style={primaryBtn}
+                                        onClick={() => navigate(`/my-bookings/${b._id}`)}
+                                    >
+                                        View Booking
+                                    </button>
+
+                                    {b.hotel && (
+                                        <button
+                                            style={secondaryBtn}
+                                            onClick={() => navigate(`/hotels/${b.hotel}`)}
+                                        >
+                                            View Hotel
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
-
-            <style>{`
-                .booking-card { border-radius: 14px; overflow: hidden; }
-                .booking-img { width: 100%; height: 180px; object-fit: cover; }
-            `}</style>
         </div>
     );
 }
+
+/* ================= STYLES ================= */
+
+const page = { maxWidth: 1000, margin: "40px auto", padding: 16 };
+const title = { margin: 0, fontSize: 28, fontWeight: 900 };
+
+const grid = {
+    marginTop: 18,
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: 16,
+};
+
+const card = {
+    border: "1px solid #e5e7eb",
+    borderRadius: 18,
+    overflow: "hidden",
+    background: "#fff",
+    boxShadow: "0 10px 24px rgba(0,0,0,.08)",
+};
+
+const img = { width: "100%", height: 160, objectFit: "cover" };
+const muted = { marginTop: 6, color: "#6b7280", fontSize: 13 };
+
+const actions = {
+    marginTop: 14,
+    display: "flex",
+    gap: 10,
+};
+
+const primaryBtn = {
+    flex: 1,
+    background: "#2563eb",
+    color: "#fff",
+    border: "none",
+    padding: "10px 12px",
+    borderRadius: 12,
+    fontWeight: 900,
+    cursor: "pointer",
+};
+
+const secondaryBtn = {
+    flex: 1,
+    background: "#f3f4f6",
+    color: "#111827",
+    border: "1px solid #e5e7eb",
+    padding: "10px 12px",
+    borderRadius: 12,
+    fontWeight: 900,
+    cursor: "pointer",
+};
+
+const badge = (s) => ({
+    fontSize: 11,
+    padding: "5px 9px",
+    borderRadius: 999,
+    fontWeight: 900,
+    background:
+        s === "CANCELLED"
+            ? "#fee2e2"
+            : s === "CONFIRMED"
+                ? "#dcfce7"
+                : "#e0e7ff",
+    color:
+        s === "CANCELLED"
+            ? "#991b1b"
+            : s === "CONFIRMED"
+                ? "#166534"
+                : "#1e40af",
+});
+
+const wrap = {
+    maxWidth: 700,
+    margin: "60px auto",
+    padding: 16,
+    textAlign: "center",
+};
+
+const btn = {
+    display: "inline-block",
+    marginTop: 10,
+    background: "#2563eb",
+    color: "#fff",
+    padding: "12px 16px",
+    borderRadius: 14,
+    textDecoration: "none",
+    fontWeight: 900,
+};

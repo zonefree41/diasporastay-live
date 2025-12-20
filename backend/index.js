@@ -1,11 +1,15 @@
-// backend/index.js (DiasporaStay Backend)
+console.log("🔔 Stripe webhook received");
+
+
+// backend/index.js
 import "dotenv/config";
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
-import MongoStore from "connect-mongo";
 import session from "express-session";
-import Stripe from "stripe";
+import MongoStore from "connect-mongo";
+import stripe from "./config/stripe.js";
+import sendEmail from "./utils/sendEmail.js";
 
 /* =========================
    ROUTES IMPORTS
@@ -43,25 +47,14 @@ import seedBookings from "./routes/seedBookings.js";
    APP INIT
 ========================= */
 const app = express();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+console.log("ENV STRIPE KEY =", process.env.STRIPE_SECRET_KEY?.slice(0, 12) + "...");
 
 /* =========================
-   ✅ CORS (MUST BE FIRST)
-   - Keep it simple (no function)
-   - Always set headers for allowed origins
+   CORS (GLOBAL + SAFE)
 ========================= */
-const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5175",
-    "https://diasporastay-live.vercel.app",
-];
-
-// =========================
-// ✅ FINAL PRODUCTION CORS (RENDER + VERCEL SAFE)
-// =========================
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-
     res.header("Access-Control-Allow-Origin", origin || "*");
     res.header("Access-Control-Allow-Credentials", "true");
     res.header(
@@ -80,6 +73,9 @@ app.use((req, res, next) => {
     next();
 });
 
+/* =========================
+   HEALTH CHECK
+========================= */
 app.get("/", (req, res) => {
     res.json({
         status: "OK",
@@ -89,90 +85,131 @@ app.get("/", (req, res) => {
     });
 });
 
-
-
-// ✅ Express 5-safe preflight handler (no "*")
-app.use((req, res, next) => {
-    if (req.method === "OPTIONS") return res.sendStatus(204);
-    next();
-});
-
 /* =========================
-   ✅ STRIPE WEBHOOK (RAW BODY)
-   - MUST be before express.json()
-   - Path MUST match Stripe endpoint exactly
+   STRIPE WEBHOOK (RAW BODY)
 ========================= */
-app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-    console.log("🔔 Stripe webhook hit");
+app.post(
+    "/api/stripe/webhook",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+        console.log("🔔 Stripe webhook received");
 
-    const sig = req.headers["stripe-signature"];
-    let event;
+        const sig = req.headers["stripe-signature"];
+        let event;
 
-    try {
-        event = stripe.webhooks.constructEvent(
-            req.body,
-            sig,
-            process.env.STRIPE_WEBHOOK_SECRET
-        );
-    } catch (err) {
-        console.error("❌ Webhook signature verification failed:", err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+        try {
+            event = stripe.webhooks.constructEvent(
+                req.body,
+                sig,
+                process.env.STRIPE_WEBHOOK_SECRET
+            );
+        } catch (err) {
+            console.error("❌ Webhook signature failed:", err.message);
+            return res.status(400).send(`Webhook Error: ${err.message}`);
+        }
 
-    console.log("📦 Stripe event:", event.type);
+        try {
+            if (event.type === "checkout.session.completed") {
+                const session = event.data.object;
 
-    try {
-        const Booking = (await import("./models/Booking.js")).default;
+                const Booking = (await import("./models/Booking.js")).default;
+                const Hotel = (await import("./models/Hotel.js")).default;
+                const Guest = (await import("./models/Guest.js")).default;
+                const Owner = (await import("./models/Owner.js")).default;
 
-        // ✅ PAYMENT SUCCESS
-        if (event.type === "checkout.session.completed") {
-            const sessionObj = event.data.object;
+                const booking = await Booking.findOne({
+                    stripeSessionId: session.id,
+                });
 
-            const booking = await Booking.findOne({ stripeSessionId: sessionObj.id });
+                if (!booking) {
+                    console.warn("⚠️ Booking not found:", session.id);
+                    return res.json({ received: true });
+                }
 
-            if (!booking) {
-                console.warn("⚠️ Booking not found for session:", sessionObj.id);
-            } else {
                 booking.paymentStatus = "PAID";
                 booking.status = "CONFIRMED";
-                booking.stripePaymentIntentId = sessionObj.payment_intent || null;
+                booking.stripePaymentIntentId = session.payment_intent || null;
                 await booking.save();
 
-                console.log("✅ BOOKING CONFIRMED:", booking._id.toString());
+                const hotel = await Hotel.findById(booking.hotel);
+                if (hotel) {
+                    const start = new Date(booking.checkIn);
+                    const end = new Date(booking.checkOut);
+
+                    const datesToBlock = [];
+                    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+                        datesToBlock.push(new Date(d));
+                    }
+
+                    hotel.blockedDates = Array.from(
+                        new Set(
+                            [...hotel.blockedDates, ...datesToBlock].map((d) =>
+                                new Date(d).toISOString()
+                            )
+                        )
+                    ).map((d) => new Date(d));
+
+                    await hotel.save();
+                }
+
+                // ==============================
+                // 📩 EMAIL OWNER ON BOOKING
+                // ==============================
+                const guest = await Guest.findById(booking.guestId);
+                const owner = hotel ? await Owner.findById(hotel.ownerId) : null;
+
+                if (owner?.email && hotel && guest) {
+                    try {
+                        await sendEmail({
+                            to: owner.email,
+                            subject: "🏨 New Booking Confirmed",
+                            html: `
+                <h2>New Booking Confirmed</h2>
+
+                <p><strong>Hotel:</strong> ${hotel.name}</p>
+
+                <p><strong>Guest:</strong> ${guest.name || "Guest"}<br/>
+                <strong>Email:</strong> ${guest.email}</p>
+
+                <p><strong>Dates:</strong><br/>
+                ${new Date(booking.checkIn).toDateString()} → 
+                ${new Date(booking.checkOut).toDateString()}</p>
+
+                <p><strong>Nights:</strong> ${booking.nights}</p>
+
+                <p><strong>Total:</strong> $${booking.totalPrice}</p>
+
+                <hr/>
+                <p>DiasporaStay</p>
+            `,
+                        });
+
+                        console.log("📧 Owner email sent:", owner.email);
+                    } catch (emailErr) {
+                        console.error("❌ Failed to send owner email:", emailErr.message);
+                    }
+                }
+
+                console.log("✅ Booking confirmed & dates blocked:", booking._id);
             }
+
+            return res.json({ received: true });
+        } catch (err) {
+            console.error("🔥 Webhook processing error:", err);
+            return res.status(500).send("Webhook handler failed");
         }
-
-        // ❌ PAYMENT FAILED / EXPIRED
-        if (
-            event.type === "checkout.session.expired" ||
-            event.type === "checkout.session.async_payment_failed"
-        ) {
-            const sessionObj = event.data.object;
-
-            const booking = await Booking.findOne({ stripeSessionId: sessionObj.id });
-            if (booking) {
-                booking.paymentStatus = "FAILED";
-                booking.status = "CANCELLED";
-                await booking.save();
-                console.log("🔴 BOOKING FAILED:", booking._id.toString());
-            }
-        }
-
-        return res.json({ received: true });
-    } catch (err) {
-        console.error("🔥 Webhook handler error:", err);
-        return res.status(500).send("Webhook handler error");
     }
-});
+);
+
 
 /* =========================
-   BODY PARSERS (AFTER WEBHOOK)
+   BODY PARSERS
 ========================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* =========================
-   SESSION (OPTIONAL for your app)
+   SESSION
 ========================= */
 app.use(
     session({
@@ -249,7 +286,12 @@ mongoose
         console.log("✅ MongoDB Connected");
         app.listen(PORT, () => {
             console.log(`🚀 Backend listening on port ${PORT}`);
-            console.log("🔑 Stripe key in use:", process.env.STRIPE_SECRET_KEY?.slice(0, 12) + "...");
+            console.log(
+                "🔑 Stripe key in use:",
+                process.env.STRIPE_SECRET_KEY?.slice(0, 12) + "..."
+            );
         });
     })
-    .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+    .catch((err) => {
+        console.error("❌ MongoDB Connection Error:", err);
+    });
