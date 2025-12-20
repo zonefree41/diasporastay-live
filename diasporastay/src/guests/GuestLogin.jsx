@@ -10,7 +10,7 @@ import {
 } from "react-icons/fa";
 import "../styles/theme.css";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_URL; // ✅ REQUIRED
 
 export default function GuestLogin() {
     const navigate = useNavigate();
@@ -35,11 +35,12 @@ export default function GuestLogin() {
             const res = await fetch(`${API}/api/guests/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include", // ✅ safe for Render / cookies if needed
                 body: JSON.stringify({ email, password }),
             });
 
             if (!res.ok) {
-                const text = await res.text(); // prevents JSON crash
+                const text = await res.text(); // ✅ prevents JSON crash
                 throw new Error(text || "Login failed");
             }
 
@@ -50,10 +51,11 @@ export default function GuestLogin() {
             localStorage.setItem("guestEmail", data.guest.email);
             localStorage.setItem("guestId", data.guest._id);
 
-            // ✅ CLEAR OWNER SESSION
+            // ✅ CLEAR OWNER SESSION (CRITICAL)
             localStorage.removeItem("ownerToken");
             localStorage.removeItem("ownerEmail");
 
+            // 🔁 Sync navbar + route guards
             window.dispatchEvent(new Event("navbarUpdate"));
 
             setSuccess("Login successful!");
@@ -72,7 +74,7 @@ export default function GuestLogin() {
                 className="auth-card luxury-card shadow-lg p-4 rounded-4"
                 style={{ maxWidth: 420 }}
             >
-                {/* Header */}
+                {/* HEADER */}
                 <div className="text-center mb-4">
                     <FaUserCircle className="auth-icon-gold pulse-icon" />
                     <h2 className="fw-bold text-gold mt-2">Guest Login</h2>
@@ -81,7 +83,7 @@ export default function GuestLogin() {
                     </p>
                 </div>
 
-                {/* Alerts */}
+                {/* ALERTS */}
                 {error && (
                     <div className="alert alert-danger text-center py-2">{error}</div>
                 )}
@@ -92,9 +94,9 @@ export default function GuestLogin() {
                     </div>
                 )}
 
-                {/* Form */}
+                {/* FORM */}
                 <form onSubmit={handleLogin}>
-                    {/* Email */}
+                    {/* EMAIL */}
                     <div className="input-group-custom mb-3">
                         <FaEnvelope className="input-icon" />
                         <input
@@ -107,7 +109,7 @@ export default function GuestLogin() {
                         />
                     </div>
 
-                    {/* Password */}
+                    {/* PASSWORD */}
                     <div className="input-group-custom mb-4 input-wrapper">
                         <FaKey className="input-icon" />
                         <input
@@ -139,7 +141,7 @@ export default function GuestLogin() {
                         </div>
                     )}
 
-                    {/* Submit */}
+                    {/* SUBMIT */}
                     <button
                         className="btn premium-btn-filled-gold w-100"
                         disabled={loading}
@@ -149,7 +151,7 @@ export default function GuestLogin() {
                     </button>
                 </form>
 
-                {/* Links */}
+                {/* LINKS */}
                 <div className="text-center mt-3">
                     <Link className="premium-link-gold" to="/guest/forgot-password">
                         Forgot password?
@@ -158,10 +160,7 @@ export default function GuestLogin() {
 
                 <p className="text-center mt-3 mb-0">
                     Don’t have an account?{" "}
-                    <Link
-                        className="premium-link-gold fw-semibold"
-                        to="/guest/register"
-                    >
+                    <Link className="premium-link-gold fw-semibold" to="/guest/register">
                         Register
                     </Link>
                 </p>
