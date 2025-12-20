@@ -58,6 +58,19 @@ const allowedOrigins = [
     "https://diasporastay-live.vercel.app",
 ];
 
+/* =========================
+   HEALTH CHECK (MUST BE EARLY)
+========================= */
+app.get("/api/health", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.json({
+    status: "ok",
+    service: "DiasporaStay Backend",
+    env: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
+  });
+});
+// /* =========================    
 app.use((req, res, next) => {
     const origin = req.headers.origin;
 
@@ -82,17 +95,7 @@ app.use((req, res, next) => {
     next();
 });
 
-/* =========================
-   HEALTH CHECK
-========================= */
-app.get("/api/health", (req, res) => {
-    res.json({
-        status: "ok",
-        service: "DiasporaStay Backend",
-        env: process.env.NODE_ENV || "development",
-        timestamp: new Date().toISOString(),
-    });
-});
+
 
 /* =========================
    🔔 STRIPE WEBHOOK (RAW BODY)
