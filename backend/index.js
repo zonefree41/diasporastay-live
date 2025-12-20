@@ -119,8 +119,6 @@ app.post(
 
         try {
             if (event.type === "checkout.session.completed") {
-                console.log("📦 Stripe event:", event.type);
-
                 const session = event.data.object;
 
                 const Booking = (await import("./models/Booking.js")).default;
@@ -137,15 +135,18 @@ app.post(
                     return res.json({ received: true });
                 }
 
-                // ✅ Mark paid
+                // ✅ Update booking status
                 booking.paymentStatus = "PAID";
                 booking.status = "CONFIRMED";
-                booking.stripePaymentIntentId =
-                    session.payment_intent || null;
+                booking.stripePaymentIntentId = session.payment_intent || null;
                 await booking.save();
 
-                // ✅ Auto-block dates
+                // ✅ Load related data FIRST
                 const hotel = await Hotel.findById(booking.hotel);
+                const guest = await Guest.findById(booking.guestId);
+                const owner = hotel ? await Owner.findById(hotel.ownerId) : null;
+
+                // ✅ Auto-block dates
                 if (hotel) {
                     const start = new Date(booking.checkIn);
                     const end = new Date(booking.checkOut);
@@ -167,49 +168,60 @@ app.post(
                 }
 
                 // ==============================
-                // 📩 EMAIL OWNER
+                // 📧 EMAIL OWNER
                 // ==============================
-                const guest = await Guest.findById(booking.guestId);
-                const owner = hotel
-                    ? await Owner.findById(hotel.ownerId)
-                    : null;
-
                 if (owner?.email && hotel && guest) {
-                    try {
-                        await sendEmail({
-                            to: owner.email,
-                            subject: "🏨 New Booking Confirmed",
-                            html: `
+                    await sendEmail({
+                        to: owner.email,
+                        subject: "🏨 New Booking Confirmed",
+                        html: `
                 <h2>New Booking Confirmed</h2>
                 <p><strong>Hotel:</strong> ${hotel.name}</p>
-                <p><strong>Guest:</strong> ${guest.name || "Guest"}<br/>
-                <strong>Email:</strong> ${guest.email}</p>
-                <p><strong>Dates:</strong><br/>
-                ${new Date(booking.checkIn).toDateString()} → 
-                ${new Date(booking.checkOut).toDateString()}</p>
-                <p><strong>Nights:</strong> ${booking.nights}</p>
+                <p><strong>Guest:</strong> ${guest.name || "Guest"}</p>
+                <p><strong>Dates:</strong>
+                    ${new Date(booking.checkIn).toDateString()} →
+                    ${new Date(booking.checkOut).toDateString()}
+                </p>
                 <p><strong>Total:</strong> $${booking.totalPrice}</p>
-                <hr/>
-                <p>DiasporaStay</p>
-              `,
-                        });
+            `,
+                    });
 
-                        console.log("📧 Owner email sent:", owner.email);
-                    } catch (e) {
-                        console.error("❌ Email send failed:", e.message);
-                    }
+                    console.log("📧 Owner email sent:", owner.email);
                 }
 
-                console.log(
-                    "✅ Booking confirmed & dates blocked:",
-                    booking._id
-                );
+                // ==============================
+                // 📧 EMAIL GUEST CONFIRMATION
+                // ==============================
+                if (guest?.email && hotel) {
+                    await sendEmail({
+                        to: guest.email,
+                        subject: "✅ Booking Confirmed – DiasporaStay",
+                        html: `
+                <h2>Your booking is confirmed 🎉</h2>
+                <p>Hi ${guest.name || "Guest"},</p>
+
+                <p><strong>${hotel.name}</strong></p>
+                <p>
+                    ${new Date(booking.checkIn).toDateString()} →
+                    ${new Date(booking.checkOut).toDateString()}
+                </p>
+
+                <p><strong>Total Paid:</strong> $${booking.totalPrice}</p>
+
+                <p>Thank you for choosing DiasporaStay 💙</p>
+            `,
+                    });
+
+                    console.log("📧 Guest confirmation email sent:", guest.email);
+                }
+
+                console.log("✅ Booking confirmed & dates blocked:", booking._id);
             }
 
-            return res.json({ received: true });
+            res.json({ received: true });
         } catch (err) {
-            console.error("🔥 Webhook processing error:", err);
-            return res.status(500).send("Webhook handler failed");
+            console.error("❌ Webhook handler error:", err);
+            return res.status(500).send();
         }
     }
 );
