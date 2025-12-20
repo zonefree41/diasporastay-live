@@ -5,7 +5,14 @@ import { useNavigate, Link } from "react-router-dom";
 import { FaEnvelope, FaKey, FaEye, FaEyeSlash, FaUserCircle } from "react-icons/fa";
 import "../styles/theme.css";
 
-const API = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL;
+
+const res = await fetch(`${API}/api/guests/login`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, password }),
+});
+
 
 export default function GuestLogin() {
     const navigate = useNavigate();

@@ -3,6 +3,15 @@ import { useState } from "react";
 import api from "../axios";  // ✅ use configured axios instance
 import { Link, useNavigate } from "react-router-dom";
 import { FaUserTie, FaEnvelope, FaKey, FaEye, FaEyeSlash } from "react-icons/fa";
+
+const API = import.meta.env.VITE_API_URL;
+
+const res = await fetch(`${API}/api/owners/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+});
+
 import "../styles/theme.css";
 
 export default function OwnerLogin() {
