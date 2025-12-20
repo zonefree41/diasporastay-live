@@ -31,11 +31,13 @@ export default function GuestLogin() {
                 body: JSON.stringify({ email, password }),
             });
 
+            if (!res.ok) {
+                const text = await res.text(); // 👈 prevents JSON crash
+                throw new Error(text || "Login failed");
+            }
+
             const data = await res.json();
 
-            if (!res.ok) {
-                throw new Error(data.message || "Login failed");
-            }
 
             // ✅ SAVE GUEST SESSION (CRITICAL)
             localStorage.setItem("guestToken", data.token);

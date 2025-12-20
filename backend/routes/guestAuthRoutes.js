@@ -14,35 +14,28 @@ router.post("/login", async (req, res) => {
 
         const guest = await Guest.findOne({ email });
         if (!guest) {
-            return res.status(400).json({ error: "Invalid email or password" });
+            return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // Compare password
-        const isMatch = await guest.comparePassword(password);
-        if (!isMatch) {
-            return res.status(400).json({ error: "Invalid email or password" });
+        const match = await bcrypt.compare(password, guest.password);
+        if (!match) {
+            return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // ⭐ Token must use { guestId: ... }
         const token = jwt.sign(
             { guestId: guest._id },
             process.env.JWT_SECRET,
             { expiresIn: "7d" }
         );
 
-        return res.json({
-            message: "Login successful",
+        res.json({
             token,
-            guest: {
-                _id: guest._id,
-                email: guest.email,
-                name: guest.name,
-            },
+            guestId: guest._id,
+            email: guest.email,
         });
-
     } catch (err) {
         console.error("Guest login error:", err);
-        return res.status(500).json({ error: "Server error during login" });
+        res.status(500).json({ message: "Login failed" });
     }
 });
 
