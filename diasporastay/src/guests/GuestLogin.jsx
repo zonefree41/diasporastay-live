@@ -35,16 +35,14 @@ export default function GuestLogin() {
             const res = await fetch(`${API}/api/guests/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include", // ✅ safe for Render / cookies if needed
                 body: JSON.stringify({ email, password }),
             });
 
-            if (!res.ok) {
-                const text = await res.text(); // ✅ prevents JSON crash
-                throw new Error(text || "Login failed");
-            }
+            const data = await res.json().catch(() => ({}));
 
-            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || data.message || "Invalid email or password");
+            }
 
             // ✅ SAVE GUEST SESSION
             localStorage.setItem("guestToken", data.token);
