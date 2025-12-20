@@ -1,11 +1,7 @@
-console.log("🔔 Stripe webhook received");
-
-
 // backend/index.js
 import "dotenv/config";
 import express from "express";
 import mongoose from "mongoose";
-import cors from "cors";
 import session from "express-session";
 import MongoStore from "connect-mongo";
 import stripe from "./config/stripe.js";
@@ -48,20 +44,33 @@ import seedBookings from "./routes/seedBookings.js";
 ========================= */
 const app = express();
 
-console.log("ENV STRIPE KEY =", process.env.STRIPE_SECRET_KEY?.slice(0, 12) + "...");
+console.log(
+    "ENV STRIPE KEY =",
+    process.env.STRIPE_SECRET_KEY?.slice(0, 12) + "..."
+);
 
 /* =========================
-   CORS (GLOBAL + SAFE)
+   ✅ CORS (PRODUCTION SAFE)
 ========================= */
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5175",
+    "https://diasporastay-live.vercel.app",
+];
+
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    res.header("Access-Control-Allow-Origin", origin || "*");
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header(
+
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader(
         "Access-Control-Allow-Headers",
         "Origin, X-Requested-With, Content-Type, Accept, Authorization"
     );
-    res.header(
+    res.setHeader(
         "Access-Control-Allow-Methods",
         "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     );
@@ -76,17 +85,18 @@ app.use((req, res, next) => {
 /* =========================
    HEALTH CHECK
 ========================= */
-app.get("/", (req, res) => {
+app.get("/api/health", (req, res) => {
     res.json({
-        status: "OK",
+        status: "ok",
         service: "DiasporaStay Backend",
-        uptime: process.uptime(),
+        env: process.env.NODE_ENV || "development",
         timestamp: new Date().toISOString(),
     });
 });
 
 /* =========================
-   STRIPE WEBHOOK (RAW BODY)
+   🔔 STRIPE WEBHOOK (RAW BODY)
+   MUST BE BEFORE express.json()
 ========================= */
 app.post(
     "/api/stripe/webhook",
@@ -110,6 +120,8 @@ app.post(
 
         try {
             if (event.type === "checkout.session.completed") {
+                console.log("📦 Stripe event:", event.type);
+
                 const session = event.data.object;
 
                 const Booking = (await import("./models/Booking.js")).default;
@@ -126,11 +138,14 @@ app.post(
                     return res.json({ received: true });
                 }
 
+                // ✅ Mark paid
                 booking.paymentStatus = "PAID";
                 booking.status = "CONFIRMED";
-                booking.stripePaymentIntentId = session.payment_intent || null;
+                booking.stripePaymentIntentId =
+                    session.payment_intent || null;
                 await booking.save();
 
+                // ✅ Auto-block dates
                 const hotel = await Hotel.findById(booking.hotel);
                 if (hotel) {
                     const start = new Date(booking.checkIn);
@@ -153,10 +168,12 @@ app.post(
                 }
 
                 // ==============================
-                // 📩 EMAIL OWNER ON BOOKING
+                // 📩 EMAIL OWNER
                 // ==============================
                 const guest = await Guest.findById(booking.guestId);
-                const owner = hotel ? await Owner.findById(hotel.ownerId) : null;
+                const owner = hotel
+                    ? await Owner.findById(hotel.ownerId)
+                    : null;
 
                 if (owner?.email && hotel && guest) {
                     try {
@@ -165,32 +182,29 @@ app.post(
                             subject: "🏨 New Booking Confirmed",
                             html: `
                 <h2>New Booking Confirmed</h2>
-
                 <p><strong>Hotel:</strong> ${hotel.name}</p>
-
                 <p><strong>Guest:</strong> ${guest.name || "Guest"}<br/>
                 <strong>Email:</strong> ${guest.email}</p>
-
                 <p><strong>Dates:</strong><br/>
                 ${new Date(booking.checkIn).toDateString()} → 
                 ${new Date(booking.checkOut).toDateString()}</p>
-
                 <p><strong>Nights:</strong> ${booking.nights}</p>
-
                 <p><strong>Total:</strong> $${booking.totalPrice}</p>
-
                 <hr/>
                 <p>DiasporaStay</p>
-            `,
+              `,
                         });
 
                         console.log("📧 Owner email sent:", owner.email);
-                    } catch (emailErr) {
-                        console.error("❌ Failed to send owner email:", emailErr.message);
+                    } catch (e) {
+                        console.error("❌ Email send failed:", e.message);
                     }
                 }
 
-                console.log("✅ Booking confirmed & dates blocked:", booking._id);
+                console.log(
+                    "✅ Booking confirmed & dates blocked:",
+                    booking._id
+                );
             }
 
             return res.json({ received: true });
@@ -201,9 +215,8 @@ app.post(
     }
 );
 
-
 /* =========================
-   BODY PARSERS
+   BODY PARSERS (AFTER WEBHOOK)
 ========================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
