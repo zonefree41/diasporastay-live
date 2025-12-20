@@ -46,12 +46,28 @@ export default function Hotel() {
     ====================== */
     useEffect(() => {
         const loadHotel = async () => {
-            const res = await fetch(`/api/hotels/${id}`);
-            const data = await res.json();
-            setHotel(data);
+            try {
+                const res = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/hotels/${id}`
+                );
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(text || "Hotel not found");
+                }
+
+                const data = await res.json();
+                setHotel(data);
+            } catch (err) {
+                console.error("HOTEL LOAD ERROR:", err.message);
+            }
         };
+
         loadHotel();
     }, [id]);
+
+    console.log("HOTEL ID:", id);
+
 
     /* ======================
        LOAD AVAILABILITY

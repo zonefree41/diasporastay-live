@@ -12,7 +12,7 @@ router.get("/:id", async (req, res) => {
             return res.status(404).json({ message: "Hotel not found" });
         }
 
-        res.json(hotel); // ✅ includes blockedDates
+        res.json(hotel);
     } catch (err) {
         console.error("PUBLIC HOTEL LOAD ERROR:", err);
         res.status(500).json({ message: "Failed to load hotel" });
