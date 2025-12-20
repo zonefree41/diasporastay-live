@@ -1,10 +1,14 @@
 // src/axios.js
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_BASE || "http://localhost:5000";
-
 const api = axios.create({
-    baseURL: API,
+    baseURL:
+        import.meta.env.VITE_API_URL ||
+        "http://localhost:5000", // ✅ safe fallback
+    withCredentials: true,
+    headers: {
+        "Content-Type": "application/json",
+    },
 });
 
 // Attach correct token depending on who is logged in
@@ -22,3 +26,4 @@ api.interceptors.request.use((config) => {
 });
 
 export default api;
+
