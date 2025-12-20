@@ -20,7 +20,7 @@ export default function OwnerLogin() {
         setError("");
 
         try {
-            const res = await fetch("/api/owner/auth/login", {
+            const res = await fetch(`${API}/api/owners/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),

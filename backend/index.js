@@ -62,28 +62,25 @@ const allowedOrigins = [
    HEALTH CHECK (MUST BE EARLY)
 ========================= */
 app.get("/api/health", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.json({
-    status: "ok",
-    service: "DiasporaStay Backend",
-    env: process.env.NODE_ENV || "development",
-    timestamp: new Date().toISOString(),
-  });
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.json({
+        status: "ok",
+        service: "DiasporaStay Backend",
+        env: process.env.NODE_ENV || "development",
+        timestamp: new Date().toISOString(),
+    });
 });
 // /* =========================    
 app.use((req, res, next) => {
     const origin = req.headers.origin;
 
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader("Access-Control-Allow-Origin", origin);
-    }
-
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader(
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header(
         "Access-Control-Allow-Headers",
         "Origin, X-Requested-With, Content-Type, Accept, Authorization"
     );
-    res.setHeader(
+    res.header(
         "Access-Control-Allow-Methods",
         "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     );
@@ -94,7 +91,6 @@ app.use((req, res, next) => {
 
     next();
 });
-
 
 
 /* =========================
