@@ -54,30 +54,36 @@ console.log(
 /* =========================
    ✅ CORS (PRODUCTION SAFE)
 ========================= */
-const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5175",
-    "https://diasporastay-live.vercel.app",
-    "https://diasporastay-live-dbj2rj17d-luel-s-project.vercel.app",
-];
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
 
-app.use(
-    cors({
-        origin: function (origin, callback) {
-            // allow server-to-server & curl
-            if (!origin) return callback(null, true);
+    const allowedOrigins = [
+        "http://localhost:5173",
+        "http://localhost:5175",
+        "https://diasporastay-live.vercel.app",
+    ];
 
-            if (allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error("CORS not allowed"));
-            }
-        },
-        credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-    })
-);
+    if (allowedOrigins.includes(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);
+    }
+
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    );
+    res.header(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, PATCH, DELETE"
+    );
+
+    // ✅ Handle preflight safely
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(204);
+    }
+
+    next();
+});
 
 /* =========================
    HEALTH CHECK (MUST BE EARLY)
