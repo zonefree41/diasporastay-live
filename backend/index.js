@@ -256,8 +256,12 @@ app.use(
 ========================= */
 app.use("/api/stripe", stripeRoutes);
 
-app.use("/api/hotels", hotelRoutes);
+// ✅ PUBLIC FIRST
 app.use("/api/hotels", hotelPublicRoutes);
+
+// 🔒 OWNER / ADMIN LATER
+app.use("/api/hotels", hotelRoutes);
+
 
 // Owner
 app.use("/api/owner/auth", ownerAuthRoutes);

@@ -73,16 +73,14 @@ export default function Hotel() {
        LOAD AVAILABILITY
     ====================== */
     useEffect(() => {
-        const loadAvailability = async () => {
-            const res = await fetch(`/api/hotels/${id}/availability`);
-            const data = await res.json();
+        if (!hotel) return;
 
-            setBlockedDates(
-                (data.blockedDates || []).map((d) => new Date(d))
-            );
-        };
-        loadAvailability();
-    }, [id]);
+        // ✅ blockedDates come directly from hotel document
+        setBlockedDates(
+            (hotel.blockedDates || []).map((d) => new Date(d))
+        );
+    }, [hotel]);
+
 
     /* ======================
        CALCULATE TOTAL

@@ -18,15 +18,18 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
     try {
         const hotel = await Hotel.findById(req.params.id);
+
         if (!hotel) {
-            return res.status(404).json({ message: "Hotel not found" });
+            return res.status(404).json({ error: "Hotel not found" });
         }
+
         res.json(hotel);
     } catch (err) {
         console.error("PUBLIC HOTEL ERROR:", err);
-        res.status(500).json({ message: "Failed to load hotel" });
+        res.status(500).json({ error: "Failed to load hotel" });
     }
 });
+
 
 export default router;
 
