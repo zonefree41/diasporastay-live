@@ -41,6 +41,7 @@ import adminPayoutRoutes from "./routes/adminPayoutRoutes.js";
 
 import seedBookings from "./routes/seedBookings.js";
 
+
 /* =========================
    APP INIT
 ========================= */
@@ -50,6 +51,26 @@ console.log(
     "ENV STRIPE KEY =",
     process.env.STRIPE_SECRET_KEY?.slice(0, 12) + "..."
 );
+
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+
+    res.header("Access-Control-Allow-Origin", origin || "*");
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    );
+    res.header(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    );
+
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+
+    next();
+});
+
 
 /* =========================
    ✅ CORS (PRODUCTION SAFE)
