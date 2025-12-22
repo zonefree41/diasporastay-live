@@ -182,4 +182,24 @@ router.get("/:id", async (req, res) => {
     }
 });
 
+// DELETE /api/hotels/:id
+router.delete("/:id", protectOwner, async (req, res) => {
+    try {
+        const hotel = await Hotel.findOneAndDelete({
+            _id: req.params.id,
+            ownerId: req.owner._id,
+        });
+
+        if (!hotel) {
+            return res.status(404).json({ message: "Hotel not found" });
+        }
+
+        res.json({ message: "Hotel deleted successfully" });
+    } catch (err) {
+        console.error("DELETE HOTEL ERROR:", err);
+        res.status(500).json({ message: "Failed to delete hotel" });
+    }
+});
+
+
 export default router;
