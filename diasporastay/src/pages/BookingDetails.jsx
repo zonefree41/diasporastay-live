@@ -1,6 +1,7 @@
 // src/pages/BookingDetails.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import api from "../axios";
 
 export default function BookingDetails() {
     const { id } = useParams();
@@ -12,72 +13,95 @@ export default function BookingDetails() {
 
     const token = localStorage.getItem("guestToken");
 
+    /* ================= LOAD BOOKING ================= */
     useEffect(() => {
         if (!token) {
             navigate("/guest/login");
             return;
         }
 
+        let mounted = true;
+
         const load = async () => {
             try {
                 const res = await fetch(`/api/bookings/${id}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
+
                 const data = await res.json();
                 if (!res.ok) throw new Error(data?.message || "Failed to load booking");
-                setBooking(data);
+
+                if (mounted) {
+                    setBooking(data);
+                    console.log("BOOKING OBJECT:", data);
+                }
             } catch (e) {
                 alert(e.message);
                 navigate("/my-bookings");
             } finally {
-                setLoading(false);
+                if (mounted) setLoading(false);
             }
         };
 
         load();
+        return () => (mounted = false);
     }, [id, token, navigate]);
 
+    /* ================= CANCEL RULE ================= */
     const canCancel = useMemo(() => {
         if (!booking) return false;
         if (booking.status === "CANCELLED") return false;
-        const checkIn = new Date(booking.checkIn);
-        return checkIn > new Date();
+
+        const checkIn = new Date(booking.checkIn).getTime();
+        return checkIn > Date.now();
     }, [booking]);
 
+    /* ================= CANCEL HANDLER ================= */
     const handleCancel = async () => {
-        if (!canCancel) return;
+        if (!canCancel || busy) return;
 
-        const ok = confirm("Cancel this booking? This will free your blocked dates.");
+        const ok = window.confirm(
+            "Cancel this booking? This will free your blocked dates."
+        );
         if (!ok) return;
 
         setBusy(true);
         try {
-            const res = await fetch(`/api/bookings/${id}/cancel`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data?.message || "Cancel failed");
-            setBooking(data.booking);
+            const { data } = await api.patch(
+                `/api/bookings/${id}/cancel`
+            );
+
+            // backend should return updated booking
+            setBooking(data.booking ?? data);
             alert("Booking cancelled.");
         } catch (e) {
-            alert(e.message);
+            console.error("Cancel error:", e);
+            alert(
+                e?.response?.data?.message ||
+                "Cancel failed. Please try again."
+            );
         } finally {
             setBusy(false);
         }
     };
 
+    /* ================= GUARDS ================= */
     if (loading) return <p style={{ padding: 40 }}>Loading…</p>;
     if (!booking) return <p style={{ padding: 40 }}>Booking not found</p>;
 
     const snap = booking.hotelSnapshot || {};
     const hero = snap.images?.[0];
 
+    /* ================= RENDER ================= */
     return (
         <div style={page}>
             <div style={topRow}>
-                <button onClick={() => navigate(-1)} style={backBtn}>← Back</button>
-                <Link to="/my-bookings" style={linkBtn}>My Bookings</Link>
+                <button onClick={() => navigate(-1)} style={backBtn}>
+                    ← Back
+                </button>
+                <Link to="/my-bookings" style={linkBtn}>
+                    My Bookings
+                </Link>
             </div>
 
             <div style={card}>
@@ -85,16 +109,22 @@ export default function BookingDetails() {
 
                 <div style={{ padding: 18 }}>
                     <h1 style={h1}>{snap.name || "Hotel"}</h1>
-                    <div style={muted}>{snap.city}, {snap.country}</div>
+                    <div style={muted}>
+                        {snap.city}, {snap.country}
+                    </div>
 
                     <div style={grid}>
                         <div style={box}>
                             <div style={label}>Check-in</div>
-                            <div style={value}>{new Date(booking.checkIn).toLocaleDateString()}</div>
+                            <div style={value}>
+                                {new Date(booking.checkIn).toLocaleDateString()}
+                            </div>
                         </div>
                         <div style={box}>
                             <div style={label}>Check-out</div>
-                            <div style={value}>{new Date(booking.checkOut).toLocaleDateString()}</div>
+                            <div style={value}>
+                                {new Date(booking.checkOut).toLocaleDateString()}
+                            </div>
                         </div>
                         <div style={box}>
                             <div style={label}>Nights</div>
@@ -102,19 +132,28 @@ export default function BookingDetails() {
                         </div>
                         <div style={box}>
                             <div style={label}>Total</div>
-                            <div style={value}>${Number(booking.totalPrice || 0).toFixed(2)}</div>
+                            <div style={value}>
+                                ${Number(booking.totalPrice || 0).toFixed(2)}
+                            </div>
                         </div>
                     </div>
 
                     <div style={statusRow}>
-                        <span style={badge(booking.status)}>{booking.status}</span>
+                        <span style={badge(booking.status)}>
+                            {booking.status}
+                        </span>
                         <span style={subBadge}>{booking.paymentStatus}</span>
                     </div>
 
                     <div style={actions}>
-                        <Link to={`/hotels/${booking.hotel}`} style={primaryLink}>
-                            View Hotel
-                        </Link>
+                        {booking.hotelId && (
+                            <Link
+                                to={`/hotels/${booking.hotelId}`}
+                                style={primaryLink}
+                            >
+                                View Hotel
+                            </Link>
+                        )}
 
                         <button
                             onClick={handleCancel}
@@ -122,7 +161,8 @@ export default function BookingDetails() {
                             style={{
                                 ...dangerBtn,
                                 opacity: !canCancel || busy ? 0.55 : 1,
-                                cursor: !canCancel || busy ? "not-allowed" : "pointer",
+                                cursor:
+                                    !canCancel || busy ? "not-allowed" : "pointer",
                             }}
                         >
                             {busy ? "Cancelling…" : "Cancel Booking"}
@@ -130,7 +170,9 @@ export default function BookingDetails() {
                     </div>
 
                     {!canCancel && booking.status !== "CANCELLED" && (
-                        <p style={hint}>Cancellation is only available before the check-in date.</p>
+                        <p style={hint}>
+                            Cancellation is only available before the check-in date.
+                        </p>
                     )}
                 </div>
             </div>

@@ -127,6 +127,68 @@ router.get("/:id", protectGuest, async (req, res) => {
 });
 
 /* ======================================================
+   GUEST: CANCEL BOOKING
+   PATCH /api/bookings/:id/cancel
+====================================================== */
+router.patch("/:id/cancel", protectGuest, async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid booking id" });
+        }
+
+        const booking = await Booking.findOne({
+            _id: id,
+            guestId: req.guest._id,
+        }).session(session);
+
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found" });
+        }
+
+        if (booking.status === "CANCELLED") {
+            return res.status(400).json({ message: "Booking already cancelled" });
+        }
+
+        // optional: enforce 24h rule
+        const hoursUntilCheckIn =
+            (new Date(booking.checkIn).getTime() - Date.now()) /
+            (1000 * 60 * 60);
+
+        if (hoursUntilCheckIn <= 24) {
+            return res
+                .status(400)
+                .json({ message: "Cancellation window closed" });
+        }
+
+        booking.status = "CANCELLED";
+        await booking.save({ session });
+
+        // unblock dates
+        if (booking.bookedDates?.length) {
+            await Hotel.updateOne(
+                { _id: booking.hotel },
+                { $pull: { blockedDates: { $in: booking.bookedDates } } }
+            );
+        }
+
+        await session.commitTransaction();
+        res.json({ booking });
+    } catch (err) {
+        await session.abortTransaction();
+        console.error("CANCEL BOOKING ERROR:", err);
+        res.status(500).json({ message: "Cancel failed" });
+    } finally {
+        session.endSession();
+    }
+});
+
+
+/* ======================================================
    GUEST: CANCEL BOOKING (no refund yet)
    POST /api/bookings/:id/cancel
    - Only future bookings allowed

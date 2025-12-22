@@ -23,6 +23,7 @@ export default function MyBookings() {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data?.message || "Failed to load bookings");
                 setItems(data);
+                console.log("BOOKING ITEM:", b);
             } catch (e) {
                 alert(e.message);
             } finally {
@@ -89,7 +90,7 @@ export default function MyBookings() {
                                     {b.hotel && (
                                         <button
                                             style={secondaryBtn}
-                                            onClick={() => navigate(`/hotels/${b.hotel}`)}
+                                            onClick={() => navigate(`/hotels/${b.hotelId}`)}
                                         >
                                             View Hotel
                                         </button>
