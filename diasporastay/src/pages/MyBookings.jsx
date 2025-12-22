@@ -88,7 +88,7 @@ export default function MyBookings() {
                                     {b.hotel && (
                                         <button
                                             style={secondaryBtn}
-                                            onClick={() => navigate(`/hotels/${b.hotelId}`)}
+                                            onClick={() => navigate(`/hotels/${b.hotel._id}`)}
                                         >
                                             View Hotel
                                         </button>

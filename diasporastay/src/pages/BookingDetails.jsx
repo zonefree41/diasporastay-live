@@ -146,15 +146,11 @@ export default function BookingDetails() {
                     </div>
 
                     <div style={actions}>
-                        {booking.hotelId && (
-                            <Link
-                                to={`/hotels/${booking.hotelId}`}
-                                style={primaryLink}
-                            >
+                        {booking.hotel?._id && (
+                            <Link to={`/hotels/${booking.hotel._id}`} style={primaryLink}>
                                 View Hotel
                             </Link>
                         )}
-
                         <button
                             onClick={handleCancel}
                             disabled={!canCancel || busy}
