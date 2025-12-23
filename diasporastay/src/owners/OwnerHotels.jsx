@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../axios"; // ✅ USE AXIOS
 
 export default function OwnerHotels() {
     const navigate = useNavigate();
@@ -13,16 +14,14 @@ export default function OwnerHotels() {
         loadHotels();
     }, []);
 
+    /* ================= LOAD HOTELS ================= */
     const loadHotels = async () => {
         try {
-            const token = localStorage.getItem("ownerToken");
-            const res = await fetch("/api/owner/hotels/my-hotels", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
+            const { data } = await api.get("/api/owner/hotels/my-hotels");
             setHotels(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error(err);
+            setHotels([]);
         } finally {
             setLoading(false);
         }
@@ -33,19 +32,20 @@ export default function OwnerHotels() {
         setShowDelete(true);
     };
 
+    /* ================= DELETE HOTEL ================= */
     const handleDelete = async () => {
-        try {
-            const token = localStorage.getItem("ownerToken");
-            await fetch(`/api/owner/hotels/${selectedHotel._id}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` },
-            });
+        if (!selectedHotel) return;
 
+        try {
+            await api.delete(`/api/hotels/${selectedHotel._id}`);
             setHotels((prev) =>
                 prev.filter((h) => h._id !== selectedHotel._id)
             );
         } catch (err) {
-            alert("Failed to delete hotel");
+            console.error(err);
+            alert(
+                err?.response?.data?.message || "Failed to delete hotel"
+            );
         } finally {
             setShowDelete(false);
             setSelectedHotel(null);
@@ -115,7 +115,7 @@ export default function OwnerHotels() {
                                 ${hotel.pricePerNight} / night
                             </p>
 
-                            {/* ACTIONS — MOBILE FRIENDLY */}
+                            {/* ACTIONS */}
                             <div style={actions}>
                                 <button
                                     style={{
@@ -124,7 +124,9 @@ export default function OwnerHotels() {
                                         color: "#fff",
                                     }}
                                     onClick={() =>
-                                        navigate(`/owner/hotels/${hotel._id}/availability`)
+                                        navigate(
+                                            `/owner/hotels/${hotel._id}/availability`
+                                        )
                                     }
                                 >
                                     📅 Availability
@@ -133,7 +135,9 @@ export default function OwnerHotels() {
                                 <button
                                     style={actionBtn}
                                     onClick={() =>
-                                        navigate(`/owner/hotels/${hotel._id}/edit`)
+                                        navigate(
+                                            `/owner/hotels/${hotel._id}/edit`
+                                        )
                                     }
                                 >
                                     ✏️ Edit
@@ -194,7 +198,7 @@ export default function OwnerHotels() {
     );
 }
 
-/* ================= STYLES ================= */
+/* ================= STYLES (UNCHANGED) ================= */
 
 const header = {
     display: "flex",

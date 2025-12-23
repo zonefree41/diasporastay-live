@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import api from "../axios";
 
 /* ================= STYLES ================= */
 
@@ -148,6 +149,7 @@ export default function EditHotel() {
 
     const [existingImages, setExistingImages] = useState([]);
     const [newImages, setNewImages] = useState([]);
+    const [images, setImages] = useState([]);
 
     useEffect(() => {
         loadHotel();
@@ -180,28 +182,31 @@ export default function EditHotel() {
         setSaving(true);
 
         try {
-            const token = localStorage.getItem("ownerToken");
             const formData = new FormData();
 
             formData.append("name", name);
             formData.append("city", city);
             formData.append("country", country);
-            formData.append("description", description);
             formData.append("pricePerNight", pricePerNight);
             formData.append("minNights", minNights);
-            formData.append("existingImages", JSON.stringify(existingImages));
+            formData.append("description", description);
 
-            Array.from(newImages).forEach((f) => formData.append("images", f));
+            // 👇 THIS IS THE CRITICAL PART
+            if (images && images.length > 0) {
+                for (const file of images) {
+                    formData.append("images", file);
+                }
+            }
 
-            await fetch(`/api/owner/hotels/${id}`, {
-                method: "PUT",
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData,
-            });
+            await api.put(`/api/hotels/${id}`, formData);
 
+            alert("Hotel updated successfully");
             navigate("/owner/my-hotels");
-        } catch {
-            alert("Update failed");
+        } catch (err) {
+            console.error(err);
+            alert(
+                err?.response?.data?.message || "Failed to update hotel"
+            );
         } finally {
             setSaving(false);
         }
@@ -267,7 +272,12 @@ export default function EditHotel() {
                         </div>
                         <label style={uploadBox}>
                             + Add photos
-                            <input type="file" multiple hidden onChange={(e) => setNewImages(e.target.files)} />
+                            <input
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                onChange={(e) => setImages(e.target.files)}
+                            />
                         </label>
                     </div>
 

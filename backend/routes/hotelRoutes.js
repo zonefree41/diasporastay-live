@@ -26,6 +26,8 @@ router.post(
                 description,
                 amenities,
                 rooms,
+                pricePerNight,
+                minNights,
             } = req.body;
 
             if (!name || !city || !country) {
@@ -56,17 +58,17 @@ router.post(
                CREATE HOTEL
             ============================ */
             const hotel = await Hotel.create({
-                ownerId: req.owner._id, // 🔥 THIS IS THE KEY
+                ownerId: req.owner._id,
                 name,
                 city,
                 country,
-                description,
                 pricePerNight: Number(pricePerNight),
+                minNights: Number(minNights),
+                description,
                 amenities: parsedAmenities,
                 rooms: parsedRooms,
                 images: uploadedImages,
             });
-
 
             return res.status(201).json(hotel);
 
@@ -79,6 +81,7 @@ router.post(
     }
 );
 
+
 /* ======================================================
    OWNER — EDIT HOTEL
 ====================================================== */
@@ -88,53 +91,49 @@ router.put(
     upload.array("images", 10),
     async (req, res) => {
         try {
-            const hotel = await Hotel.findById(req.params.id);
-
-            if (!hotel) {
-                return res.status(404).json({ message: "Hotel not found" });
-            }
-
-            // 🔒 Ensure owner owns this hotel
-            if (hotel.owner.toString() !== req.owner._id.toString()) {
-                return res.status(403).json({ message: "Not authorized" });
-            }
+            console.log("EDIT HOTEL BODY:", req.body);
+            console.log("EDIT HOTEL FILES:", req.files);
 
             const {
                 name,
                 city,
                 country,
                 description,
-                amenities,
-                rooms,
-                existingImages,
+                pricePerNight,
+                minNights,
             } = req.body;
 
-            // Parse JSON fields
-            const parsedAmenities = amenities ? JSON.parse(amenities) : hotel.amenities;
-            const parsedRooms = rooms ? JSON.parse(rooms) : hotel.rooms;
+            const uploadedImages =
+                req.files?.map((file) => file.path) || [];
 
-            // Keep existing images
-            let imageUrls = existingImages ? JSON.parse(existingImages) : hotel.images;
+            const updateData = {
+                name,
+                city,
+                country,
+                description,
+                pricePerNight: Number(pricePerNight),
+                minNights: Number(minNights),
+            };
 
-            // Add new uploaded images
-            if (req.files && req.files.length > 0) {
-                const newImages = req.files.map((file) => file.path);
-                imageUrls = [...imageUrls, ...newImages];
+            if (uploadedImages.length > 0) {
+                updateData.$push = {
+                    images: { $each: uploadedImages },
+                };
             }
 
-            hotel.name = name;
-            hotel.city = city;
-            hotel.country = country;
-            hotel.description = description;
-            hotel.amenities = parsedAmenities;
-            hotel.rooms = parsedRooms;
-            hotel.images = imageUrls;
+            const hotel = await Hotel.findOneAndUpdate(
+                { _id: req.params.id, ownerId: req.owner._id },
+                updateData,
+                { new: true }
+            );
 
-            await hotel.save();
+            if (!hotel) {
+                return res.status(404).json({ message: "Hotel not found" });
+            }
 
             res.json(hotel);
-        } catch (error) {
-            console.error("EDIT HOTEL ERROR:", error);
+        } catch (err) {
+            console.error("EDIT HOTEL ERROR:", err);
             res.status(500).json({ message: "Failed to update hotel" });
         }
     }

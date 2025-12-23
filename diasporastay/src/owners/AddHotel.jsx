@@ -1,6 +1,8 @@
 // src/owners/AddHotel.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../axios";
+
 
 export default function AddHotel() {
   const navigate = useNavigate();
@@ -31,17 +33,8 @@ export default function AddHotel() {
         formData.append("images", file);
       }
 
-      const res = await fetch("/api/hotels", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!res.ok) {
-        throw new Error("Add hotel failed");
-      }
+      await api.post("/api/hotels", formData);
+      alert("Hotel added successfully");
 
       navigate("/owner/my-hotels");
     } catch (err) {
