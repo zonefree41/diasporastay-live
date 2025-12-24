@@ -152,14 +152,20 @@ export default function EditHotel() {
     const [images, setImages] = useState([]);
     const [error, setError] = useState(null);
 
-
     useEffect(() => {
         const loadHotel = async () => {
             try {
                 setError(null);
 
                 const { data } = await api.get(`/api/owner/hotels/${id}`);
-                setHotel(data);
+
+                setName(data.name);
+                setCity(data.city);
+                setCountry(data.country);
+                setDescription(data.description || "");
+                setPricePerNight(data.pricePerNight);
+                setMinNights(data.minNights || 2);
+                setExistingImages(data.images || []);
             } catch (err) {
                 console.error("LOAD HOTEL ERROR:", err);
                 setError("Unable to load hotel details.");
