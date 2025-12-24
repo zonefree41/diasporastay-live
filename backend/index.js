@@ -52,6 +52,7 @@ console.log(
     process.env.STRIPE_SECRET_KEY?.slice(0, 12) + "..."
 );
 
+
 app.use((req, res, next) => {
     const origin = req.headers.origin;
 
@@ -97,16 +98,16 @@ app.use((req, res, next) => {
     );
     res.header(
         "Access-Control-Allow-Methods",
-        "GET, POST, PUT, PATCH, DELETE"
+        "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     );
 
-    // ✅ Handle preflight safely
     if (req.method === "OPTIONS") {
         return res.sendStatus(204);
     }
 
     next();
 });
+
 
 /* =========================
    HEALTH CHECK (MUST BE EARLY)
