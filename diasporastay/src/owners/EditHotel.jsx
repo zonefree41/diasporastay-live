@@ -150,10 +150,26 @@ export default function EditHotel() {
     const [existingImages, setExistingImages] = useState([]);
     const [newImages, setNewImages] = useState([]);
     const [images, setImages] = useState([]);
+    const [error, setError] = useState(null);
+
 
     useEffect(() => {
+        const loadHotel = async () => {
+            try {
+                setError(null);
+
+                const { data } = await api.get(`/api/hotels/${id}`);
+                setHotel(data);
+            } catch (err) {
+                console.error("LOAD HOTEL ERROR:", err);
+                setError("Unable to load hotel details.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
         loadHotel();
-    }, []);
+    }, [id]);
 
     const loadHotel = async () => {
         try {
@@ -212,7 +228,20 @@ export default function EditHotel() {
         }
     };
 
-    if (loading) return <p style={{ padding: 40 }}>Loading…</p>;
+    if (loading) {
+        return <p style={{ padding: 40 }}>Loading hotel…</p>;
+    }
+
+    if (error) {
+        return (
+            <div style={{ padding: 40 }}>
+                <p style={{ color: "red", fontWeight: 600 }}>{error}</p>
+                <button onClick={() => navigate("/owner/my-hotels")}>
+                    Back to My Hotels
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div style={page}>
