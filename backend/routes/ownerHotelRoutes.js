@@ -133,6 +133,7 @@ router.get("/:id/availability", protectOwner, async (req, res) => {
     });
 });
 
+
 // SAVE availability
 router.put("/:id/availability", protectOwner, async (req, res) => {
     const { blockedDates } = req.body;

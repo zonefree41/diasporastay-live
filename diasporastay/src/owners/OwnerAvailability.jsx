@@ -7,49 +7,45 @@ import OwnerLayout from "./OwnerLayout";
 export default function OwnerAvailability() {
     const { id } = useParams();
 
-    const [dates, setDates] = useState([]); // unavailable dates
-    const [dailyPrices, setDailyPrices] = useState({});
+    const [blockedDates, setBlockedDates] = useState([]);
     const [months, setMonths] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
     /* ======================================================
-       LOAD EXISTING AVAILABILITY
+       LOAD AVAILABILITY FROM BACKEND
     ====================================================== */
     const loadAvailability = async () => {
         try {
-            const token = localStorage.getItem("ownerToken");
-
-            const res = await api.get(`/api/owner/hotels/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            const hotel = res.data;
-
-            setDates(
-                hotel.unavailableDates?.map((d) =>
-                    new Date(d).toISOString().split("T")[0]
-                ) || []
+            const { data } = await api.get(
+                `/api/owner/hotels/${id}/availability`
             );
 
-            setDailyPrices(hotel.dailyPrices || {});
+            const parsedDates =
+                data.blockedDates?.map((d) =>
+                    new Date(d).toISOString().split("T")[0]
+                ) || [];
+
+            setBlockedDates(parsedDates);
             buildCalendar();
         } catch (err) {
-            console.error("Load availability error:", err.response?.data);
+            console.error("LOAD AVAILABILITY ERROR:", err.response?.data || err);
+            alert("Failed to load availability.");
         } finally {
             setLoading(false);
         }
     };
 
     /* ======================================================
-       BUILD NEXT 3 MONTHS
+       BUILD NEXT 3 MONTHS CALENDAR
     ====================================================== */
     const buildCalendar = () => {
         const today = new Date();
         const temp = [];
 
         for (let m = 0; m < 3; m++) {
-            let first = new Date(today.getFullYear(), today.getMonth() + m, 1);
-            let last = new Date(today.getFullYear(), today.getMonth() + m + 1, 0);
+            const first = new Date(today.getFullYear(), today.getMonth() + m, 1);
+            const last = new Date(today.getFullYear(), today.getMonth() + m + 1, 0);
 
             temp.push({
                 name: first.toLocaleString("default", { month: "long" }),
@@ -65,61 +61,41 @@ export default function OwnerAvailability() {
     };
 
     /* ======================================================
-       TOGGLE DATE AVAILABILITY
+       TOGGLE DATE
     ====================================================== */
     const toggleDate = (iso) => {
-        let updated;
-
-        if (dates.includes(iso)) {
-            updated = dates.filter((d) => d !== iso);
-        } else {
-            updated = [...dates, iso];
-        }
-
-        setDates(updated);
+        setBlockedDates((prev) =>
+            prev.includes(iso)
+                ? prev.filter((d) => d !== iso)
+                : [...prev, iso]
+        );
     };
 
     /* ======================================================
-       UPDATE DAILY PRICE
-    ====================================================== */
-    const updatePrice = (iso, value) => {
-        setDailyPrices({
-            ...dailyPrices,
-            [iso]: value,
-        });
-    };
-
-    /* ======================================================
-       SAVE AVAILABILITY TO BACKEND
+       SAVE AVAILABILITY
     ====================================================== */
     const saveAvailability = async () => {
+        setSaving(true);
         try {
-            const token = localStorage.getItem("ownerToken");
+            await api.put(`/api/owner/hotels/${id}/availability`, {
+                blockedDates,
+            });
 
-            await api.post(
-                `/api/owner/hotels/${id}/availability`,
-                {
-                    dates,
-                    dailyPrices,
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-
-            alert("Availability updated!");
+            alert("Availability updated successfully");
         } catch (err) {
-            console.error("Save availability error:", err);
+            console.error("SAVE AVAILABILITY ERROR:", err.response?.data || err);
             alert("Failed to save availability.");
+        } finally {
+            setSaving(false);
         }
     };
 
     /* ======================================================
-       INIT LOAD
+       INIT
     ====================================================== */
     useEffect(() => {
         loadAvailability();
-    }, []);
+    }, [id]);
 
     if (loading) {
         return (
@@ -136,8 +112,9 @@ export default function OwnerAvailability() {
             <button
                 className="btn btn-success mb-4 px-4"
                 onClick={saveAvailability}
+                disabled={saving}
             >
-                ✔ Save Availability
+                {saving ? "Saving..." : "✔ Save Availability"}
             </button>
 
             <div className="row g-4">
@@ -151,29 +128,17 @@ export default function OwnerAvailability() {
                             <div className="card-body">
                                 <div className="calendar-grid">
                                     {m.days.map((iso) => {
-                                        const unavailable = dates.includes(iso);
-                                        const price = dailyPrices[iso] || "";
+                                        const isBlocked = blockedDates.includes(iso);
 
                                         return (
-                                            <div key={iso} className="calendar-cell">
-                                                <button
-                                                    className={`day-btn ${unavailable ? "unavailable" : "available"
-                                                        }`}
-                                                    onClick={() => toggleDate(iso)}
-                                                >
-                                                    {iso.split("-")[2]}
-                                                </button>
-
-                                                <input
-                                                    type="number"
-                                                    className="price-input"
-                                                    placeholder="$"
-                                                    value={price}
-                                                    onChange={(e) =>
-                                                        updatePrice(iso, e.target.value)
-                                                    }
-                                                />
-                                            </div>
+                                            <button
+                                                key={iso}
+                                                className={`day-btn ${isBlocked ? "unavailable" : "available"
+                                                    }`}
+                                                onClick={() => toggleDate(iso)}
+                                            >
+                                                {iso.split("-")[2]}
+                                            </button>
                                         );
                                     })}
                                 </div>
@@ -183,39 +148,30 @@ export default function OwnerAvailability() {
                 ))}
             </div>
 
-            {/* ★ STYLES */}
+            {/* ================= STYLES ================= */}
             <style>{`
-                .calendar-grid {
-                    display: grid;
-                    grid-template-columns: repeat(7, 1fr);
-                    gap: 6px;
-                }
-                .calendar-cell {
-                    text-align: center;
-                }
-                .day-btn {
-                    width: 35px;
-                    height: 35px;
-                    border-radius: 6px;
-                    border: none;
-                    font-weight: bold;
-                    margin-bottom: 3px;
-                }
-                .available {
-                    background: #d4f8d4;
-                    color: #0b640b;
-                }
-                .unavailable {
-                    background: #ffd6d6;
-                    color: #8a0000;
-                }
-                .price-input {
-                    width: 100%;
-                    font-size: 12px;
-                    padding: 2px;
-                    text-align: center;
-                }
-            `}</style>
+        .calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 6px;
+        }
+        .day-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          border: none;
+          font-weight: bold;
+          cursor: pointer;
+        }
+        .available {
+          background: #dcfce7;
+          color: #166534;
+        }
+        .unavailable {
+          background: #fee2e2;
+          color: #991b1b;
+        }
+      `}</style>
         </OwnerLayout>
     );
 }
