@@ -158,7 +158,7 @@ export default function EditHotel() {
             try {
                 setError(null);
 
-                const { data } = await api.get(`/api/hotels/${id}`);
+                const { data } = await api.get(`/api/owner/hotels/${id}`);
                 setHotel(data);
             } catch (err) {
                 console.error("LOAD HOTEL ERROR:", err);

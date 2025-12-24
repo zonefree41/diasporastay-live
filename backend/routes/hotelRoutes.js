@@ -182,9 +182,9 @@ router.get("/:id", async (req, res) => {
 });
 
 // DELETE /api/hotels/:id
-router.delete("/:id", protectOwner, async (req, res) => {
+router.get("/:id", protectOwner, async (req, res) => {
     try {
-        const hotel = await Hotel.findOneAndDelete({
+        const hotel = await Hotel.findOne({
             _id: req.params.id,
             ownerId: req.owner._id,
         });
@@ -193,12 +193,13 @@ router.delete("/:id", protectOwner, async (req, res) => {
             return res.status(404).json({ message: "Hotel not found" });
         }
 
-        res.json({ message: "Hotel deleted successfully" });
+        res.json(hotel);
     } catch (err) {
-        console.error("DELETE HOTEL ERROR:", err);
-        res.status(500).json({ message: "Failed to delete hotel" });
+        console.error("OWNER LOAD HOTEL ERROR:", err);
+        res.status(500).json({ message: "Failed to load hotel" });
     }
 });
+
 
 
 export default router;
