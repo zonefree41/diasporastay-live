@@ -27,7 +27,6 @@ export default function OwnerAvailability() {
                 ) || [];
 
             setBlockedDates(parsedDates);
-            buildCalendar();
         } catch (err) {
             console.error("LOAD AVAILABILITY ERROR:", err.response?.data || err);
             alert("Failed to load availability.");
@@ -96,6 +95,10 @@ export default function OwnerAvailability() {
     useEffect(() => {
         loadAvailability();
     }, [id]);
+
+    useEffect(() => {
+        buildCalendar();
+    }, []);
 
     if (loading) {
         return (
