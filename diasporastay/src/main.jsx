@@ -6,7 +6,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";  // ← IMPORTANT
 import "./styles/theme.css";
 
-
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("UNHANDLED PROMISE:", e.reason);
+});
 
 
 ReactDOM.createRoot(document.getElementById("root")).render(
