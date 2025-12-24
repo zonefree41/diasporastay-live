@@ -82,6 +82,8 @@ app.use((req, res, next) => {
         "http://localhost:5173",
         "http://localhost:5175",
         "https://diasporastay-live.vercel.app",
+        "https://diasporastay.com",
+        "https://www.diasporastay.com",
     ];
 
     if (allowedOrigins.includes(origin)) {
