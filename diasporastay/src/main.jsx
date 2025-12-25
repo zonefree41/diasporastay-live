@@ -1,22 +1,20 @@
+import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
 import { BrowserRouter } from "react-router-dom";
+import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthContext";
+
 import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";  // ← IMPORTANT
-import "./styles/theme.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
-
-
-window.addEventListener("unhandledrejection", (e) => {
-  console.error("UNHANDLED PROMISE:", e.reason);
-});
-
+import "./styles/theme.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <BrowserRouter>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  </BrowserRouter>
+  <React.StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
+  </React.StrictMode>
 );

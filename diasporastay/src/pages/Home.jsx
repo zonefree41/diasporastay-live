@@ -121,12 +121,13 @@ export default function Home() {
                                                 <p className="fw-bold text-primary">
                                                     $89 / night
                                                 </p>
-                                                <button
-                                                    className="btn btn-outline-primary w-100"
-                                                    onClick={() => goToHotelOrRegister("123")}
+                                                <h5
+                                                    className="fw-bold text-primary"
+                                                    style={{ cursor: "pointer" }}
+                                                    onClick={() => goToHotelSmart("123")}
                                                 >
-                                                    View Details
-                                                </button>
+                                                    Premium Addis Hotel
+                                                </h5>
                                             </div>
                                         </div>
                                     </div>
@@ -153,12 +154,13 @@ export default function Home() {
                                                 <p className="fw-bold text-primary">
                                                     $75 / night
                                                 </p>
-                                                <Link
-                                                    to="/hotels/456"
-                                                    className="btn btn-outline-primary w-100"
+                                                <h5
+                                                    className="fw-bold text-primary"
+                                                    style={{ cursor: "pointer" }}
+                                                    onClick={() => goToHotelSmart("123")}
                                                 >
-                                                    View Details
-                                                </Link>
+                                                    Premium Addis Hotel
+                                                </h5>
                                             </div>
                                         </div>
                                     </div>

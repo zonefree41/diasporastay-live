@@ -1,7 +1,13 @@
 // src/owners/OwnerLogin.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaUserTie, FaEnvelope, FaKey, FaEye, FaEyeSlash } from "react-icons/fa";
+import {
+    FaUserTie,
+    FaEnvelope,
+    FaKey,
+    FaEye,
+    FaEyeSlash,
+} from "react-icons/fa";
 import "../styles/theme.css";
 
 const API = import.meta.env.VITE_API_URL;
@@ -17,6 +23,8 @@ export default function OwnerLogin() {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        if (loading) return;
+
         setLoading(true);
 
         try {
@@ -42,14 +50,17 @@ export default function OwnerLogin() {
             localStorage.removeItem("guestEmail");
             localStorage.removeItem("guestId");
 
-            // 🔁 Sync navbar + guards
+            // 🔁 Sync navbar / guards
             window.dispatchEvent(new Event("navbarUpdate"));
 
-            // ✅ Go to dashboard
+            // ✅ Success feedback (safe)
+            alert(err.message || "Login failed");
+
+            // ✅ Navigate
             navigate("/owner/dashboard");
         } catch (err) {
-            console.error("OWNER LOGIN ERROR:", err.message);
-            alert(err.message);
+            console.error("OWNER LOGIN ERROR:", err);
+            toastError(err.message || "Login failed");
         } finally {
             setLoading(false);
         }
@@ -57,12 +68,17 @@ export default function OwnerLogin() {
 
     return (
         <div className="auth-wrapper d-flex justify-content-center align-items-center py-5">
-            <div className="auth-card luxury-card shadow-lg p-4 rounded-4" style={{ maxWidth: 420 }}>
+            <div
+                className="auth-card luxury-card shadow-lg p-4 rounded-4"
+                style={{ maxWidth: 420 }}
+            >
                 {/* HEADER */}
                 <div className="text-center mb-4">
                     <FaUserTie className="auth-icon-gold" />
                     <h2 className="fw-bold text-gold mt-2">Owner Login</h2>
-                    <p className="text-muted small">Manage your hotels & bookings.</p>
+                    <p className="text-muted small">
+                        Manage your hotels & bookings.
+                    </p>
                 </div>
 
                 {/* FORM */}
@@ -81,7 +97,7 @@ export default function OwnerLogin() {
                     </div>
 
                     {/* Password */}
-                    <div className="input-group-custom mb-4 input-wrapper">
+                    <div className="input-group-custom mb-2 input-wrapper">
                         <FaKey className="input-icon" />
                         <input
                             type={showPassword ? "text" : "password"}
@@ -90,19 +106,34 @@ export default function OwnerLogin() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
-                            onKeyDown={(e) => setCapsWarning(e.getModifierState("CapsLock"))}
-                            onKeyUp={(e) => setCapsWarning(e.getModifierState("CapsLock"))}
+                            onKeyDown={(e) =>
+                                setCapsWarning(e.getModifierState("CapsLock"))
+                            }
+                            onKeyUp={(e) =>
+                                setCapsWarning(e.getModifierState("CapsLock"))
+                            }
                         />
 
-                        {capsWarning && <div className="text-danger small fw-semibold ms-1">⚠ Caps Lock is ON</div>}
-
-                        <span className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+                        <span
+                            className="password-toggle"
+                            onClick={() => setShowPassword((v) => !v)}
+                        >
                             {showPassword ? <FaEyeSlash /> : <FaEye />}
                         </span>
                     </div>
 
+                    {capsWarning && (
+                        <div className="text-danger small fw-semibold mb-3">
+                            ⚠ Caps Lock is ON
+                        </div>
+                    )}
+
                     {/* Submit */}
-                    <button className="btn premium-btn-filled-gold w-100" disabled={loading} type="submit">
+                    <button
+                        className="btn premium-btn-filled-gold w-100"
+                        disabled={loading}
+                        type="submit"
+                    >
                         {loading ? "Logging in..." : "Login"}
                     </button>
                 </form>
@@ -114,10 +145,13 @@ export default function OwnerLogin() {
                     </Link>
                 </div>
 
-                {/* ✅ REGISTER LINK (ADDED BACK) */}
+                {/* REGISTER */}
                 <p className="text-center mt-3 mb-0">
                     Don’t have an account?{" "}
-                    <Link className="premium-link fw-semibold" to="/owner/register">
+                    <Link
+                        className="premium-link fw-semibold"
+                        to="/owner/register"
+                    >
                         Register
                     </Link>
                 </p>
