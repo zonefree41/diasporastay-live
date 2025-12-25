@@ -78,14 +78,17 @@ export default function Home() {
                     id="featuredHotelsCarousel"
                     className="carousel slide"
                     data-bs-ride="carousel"
+                    data-bs-touch="true"
+                    data-bs-interval="5000"
                 >
+
                     <div className="carousel-inner">
 
                         {/* SLIDE 1 */}
                         <div className="carousel-item active">
-                            <div className="row g-4">
+                            <div className="row g-4 justify-content-center">
                                 {[1, 2, 3].map((n) => (
-                                    <div className="col-md-4" key={n}>
+                                    <div className="col-12 col-md-4" key={n}>
                                         <div className="card featured-card shadow-sm">
                                             <img
                                                 src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c"
@@ -115,9 +118,9 @@ export default function Home() {
 
                         {/* SLIDE 2 */}
                         <div className="carousel-item">
-                            <div className="row g-4">
-                                {[4, 5, 6].map((n) => (
-                                    <div className="col-md-4" key={n}>
+                            <div className="row g-4 justify-content-center">
+                                {[1, 2, 3].map((n) => (
+                                    <div className="col-12 col-md-4" key={n}>
                                         <div className="card featured-card shadow-sm">
                                             <img
                                                 src="https://images.unsplash.com/photo-1566073771259-6a8506099945"
@@ -187,31 +190,30 @@ export default function Home() {
                 </div>
             </div>
 
+            {/* ================= OWNER CTA (ALWAYS VISIBLE) ================= */}
+            <div className="container mt-5">
+                <div className="owner-banner">
+                    <div className="row align-items-center">
+                        <div className="col-md-8">
+                            <h2 className="fw-bold mb-2">
+                                Become a DiasporaStay Host
+                            </h2>
+                            <p className="text-muted mb-0">
+                                List your hotel and earn from global travelers.
+                                Secure payouts powered by Stripe.
+                            </p>
+                        </div>
+                        <div className="col-md-4 text-md-end mt-3 mt-md-0">
+                            <Link
+                                to="/owner/login"
+                                className="btn btn-primary btn-lg"
+                            >
+                                ➕ List Your Property
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
-
-{/* ================= OWNER CTA (ALWAYS VISIBLE) ================= */ }
-<div className="container mt-5">
-    <div className="owner-banner">
-        <div className="row align-items-center">
-            <div className="col-md-8">
-                <h2 className="fw-bold mb-2">
-                    Become a DiasporaStay Host
-                </h2>
-                <p className="text-muted mb-0">
-                    List your hotel and earn from global travelers.
-                    Secure payouts powered by Stripe.
-                </p>
-            </div>
-            <div className="col-md-4 text-md-end mt-3 mt-md-0">
-                <Link
-                    to="/owner/login"
-                    className="btn btn-primary btn-lg"
-                >
-                    ➕ List Your Property
-                </Link>
-            </div>
-        </div>
-    </div>
-</div>

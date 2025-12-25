@@ -111,3 +111,26 @@
     color: #e5e7eb;
     font-size: 18px;
 }
+
+/* FIX iOS CAROUSEL SWIPE */
+.carousel {
+    overflow: hidden;
+}
+
+.carousel-inner {
+    touch-action: pan-y;
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+    width: 10%;
+}
+
+@media (max-width: 768px) {
+
+    .carousel-control-prev,
+    .carousel-control-next {
+        display: flex;
+        align-items: center;
+    }
+}
