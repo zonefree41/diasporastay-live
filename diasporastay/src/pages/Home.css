@@ -11,3 +11,103 @@
             rgba(0, 0, 0, 0.4)),
         url("https://images.unsplash.com/photo-1501117716987-c8e1ecb2101a") center/cover no-repeat;
 }
+
+.city-chip {
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    color: #111827;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.city-chip:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+}
+
+.city-chip {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    text-decoration: none;
+    font-weight: 600;
+    color: #111;
+}
+
+.city-chip:hover {
+    background: #2563eb;
+    color: white;
+}
+
+.stripe-badge {
+    margin-top: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #16a34a;
+}
+
+/* ================= OWNER BANNER ================= */
+
+.owner-banner {
+    background: linear-gradient(135deg,
+            #2563eb,
+            #1e40af);
+    color: #fff;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.owner-banner h2 {
+    color: #fff;
+}
+
+.owner-banner p {
+    color: #e5e7eb;
+}
+
+.owner-banner .btn {
+    background: #fff;
+    color: #1e40af;
+    border: none;
+    font-weight: 700;
+}
+
+.owner-banner .btn:hover {
+    background: #e5e7eb;
+    color: #1e40af;
+}
+
+/* ================= FEATURED CAROUSEL ================= */
+
+.featured-card img {
+    height: 200px;
+    object-fit: cover;
+}
+
+.carousel-item {
+    padding: 10px 0 40px;
+}
+
+/* OWNER CTA SLIDE */
+.owner-carousel-slide {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: #fff;
+    padding: 60px 30px;
+    border-radius: 20px;
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.owner-carousel-slide p {
+    color: #e5e7eb;
+    font-size: 18px;
+}

@@ -2,38 +2,24 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
-    withCredentials: true,
+    baseURL: import.meta.env.VITE_API_URL,
     headers: {
         "Content-Type": "application/json",
     },
 });
 
+// IMPORTANT: OWNER FIRST
 api.interceptors.request.use((config) => {
-    const guestToken = localStorage.getItem("guestToken");
     const ownerToken = localStorage.getItem("ownerToken");
+    const guestToken = localStorage.getItem("guestToken");
 
-    if (guestToken) {
-        config.headers.Authorization = `Bearer ${guestToken}`;
-    } else if (ownerToken) {
+    if (ownerToken) {
         config.headers.Authorization = `Bearer ${ownerToken}`;
+    } else if (guestToken) {
+        config.headers.Authorization = `Bearer ${guestToken}`;
     }
 
     return config;
 });
-
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (
-            typeof error?.response?.data === "string" &&
-            error.response.data.startsWith("<!doctype")
-        ) {
-            console.error("HTML RESPONSE RECEIVED (WRONG ROUTE)");
-        }
-        return Promise.reject(error);
-    }
-);
-
 
 export default api;
