@@ -2,7 +2,9 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import OwnerAddHotelCard from "../components/OwnerAddHotelCard";
+import useOwnerRedirect from "../hooks/useOwnerRedirect";
 import "./Home.css";
+
 
 const cities = [
     "Addis Ababa",
@@ -13,10 +15,20 @@ const cities = [
 ];
 
 export default function Home() {
+    const { goToHotelOrRegister } = useOwnerRedirect();
     const [searchParams] = useSearchParams();
     const [query, setQuery] = useState("");
 
-    // Prefill search from URL (?city=Addis Ababa)
+    const ownerToken = localStorage.getItem("ownerToken");
+
+    const handleHotelClick = (hotelId) => {
+        if (!ownerToken) {
+            window.location.href = "/owner/register";
+        } else {
+            window.location.href = `/hotels/${hotelId}`;
+        }
+    };
+
     useEffect(() => {
         const city = searchParams.get("city");
         if (city) setQuery(city);
@@ -96,19 +108,25 @@ export default function Home() {
                                                 alt="Hotel"
                                             />
                                             <div className="card-body">
-                                                <h5 className="fw-bold">Premium Addis Hotel</h5>
+                                                <h5
+                                                    className="fw-bold text-primary"
+                                                    style={{ cursor: "pointer" }}
+                                                    onClick={() => goToHotelOrRegister("123")}
+                                                >
+                                                    Premium Addis Hotel
+                                                </h5>
                                                 <p className="text-muted mb-1">
                                                     Addis Ababa, Ethiopia
                                                 </p>
                                                 <p className="fw-bold text-primary">
                                                     $89 / night
                                                 </p>
-                                                <Link
-                                                    to="/hotels/123"
+                                                <button
                                                     className="btn btn-outline-primary w-100"
+                                                    onClick={() => goToHotelOrRegister("123")}
                                                 >
                                                     View Details
-                                                </Link>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
