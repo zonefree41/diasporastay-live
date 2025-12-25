@@ -76,16 +76,16 @@ app.use((req, res, next) => {
 /* =========================
    ✅ CORS (PRODUCTION SAFE)
 ========================= */
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5175",
+    "https://diasporastay-live.vercel.app",
+    "https://diasporastay.com",
+    "https://www.diasporastay.com",
+];
+
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-
-    const allowedOrigins = [
-        "http://localhost:5173",
-        "http://localhost:5175",
-        "https://diasporastay-live.vercel.app",
-        "https://diasporastay.com",
-        "https://www.diasporastay.com",
-    ];
 
     if (allowedOrigins.includes(origin)) {
         res.header("Access-Control-Allow-Origin", origin);
