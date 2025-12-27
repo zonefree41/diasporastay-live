@@ -52,8 +52,8 @@ const bookingSchema = new mongoose.Schema(
 
         status: {
             type: String,
-            enum: ["active", "cancelled", "completed"],
-            default: "active",
+            enum: ["ACTIVE", "CANCELLED", "COMPLETED"],
+            default: "ACTIVE",
         },
 
         // 🔁 REFUND POLICY

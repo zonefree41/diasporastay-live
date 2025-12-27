@@ -47,23 +47,29 @@ export default function OwnerBookings() {
 
             {bookings.map((b) => (
                 <div key={b._id} className="card mb-3 p-3">
-                    <h6 className="fw-bold">
-                        🏨 {b.hotel?.name || "Hotel"}
-                    </h6>
+                    <h5>{b.hotel?.name || "Hotel"}</h5>
 
-                    <div className="text-muted small">
-                        👤 Guest: {b.guestId?.email || "Guest"}
-                    </div>
+                    <p className="text-muted">
+                        {b.hotel?.city}, {b.hotel?.country}
+                    </p>
 
-                    <div className="mt-1">
-                        {new Date(b.checkIn).toLocaleDateString()} →{" "}
-                        {new Date(b.checkOut).toLocaleDateString()}
-                    </div>
+                    <p>
+                        <strong>Guest:</strong>{" "}
+                        {b.guestId?.name || b.guestId?.email || "Guest"}
+                    </p>
+
+                    <p>
+                        <strong>Dates:</strong>{" "}
+                        {new Date(b.checkIn).toDateString()} →{" "}
+                        {new Date(b.checkOut).toDateString()}
+                    </p>
+
+                    <p>
+                        <strong>Total:</strong> ${b.totalPrice}
+                    </p>
 
                     <span
                         style={{
-                            marginTop: 6,
-                            display: "inline-block",
                             padding: "4px 10px",
                             borderRadius: 999,
                             background:
@@ -74,10 +80,11 @@ export default function OwnerBookings() {
                             fontSize: 12,
                         }}
                     >
-                        {b.status.toUpperCase()}
+                        {b.status}
                     </span>
                 </div>
             ))}
         </div>
     );
 }
+

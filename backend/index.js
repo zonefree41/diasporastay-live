@@ -301,7 +301,6 @@ app.use("/api/hotels", hotelRoutes);
 // Owner
 app.use("/api/owner/auth", ownerAuthRoutes);
 app.use("/api/owner/hotels", ownerHotelRoutes);
-app.use("/api/owner/bookings", ownerBookingRoutes);
 app.use("/api/owner/profile", ownerProfileRoutes);
 app.use("/api/owner/stripe", ownerStripeRoutes);
 app.use("/api/owner/refunds", ownerRefundRoutes);
@@ -310,6 +309,8 @@ app.use("/api/owner/stripe/connect", ownerStripeConnectRoutes);
 app.use("/api/owner/earnings", ownerEarningsRoutes);
 app.use("/api/owner/payouts", ownerPayoutHistoryRoutes);
 app.use("/api/owner/payout-info", ownerPayoutInfoRoutes);
+app.use("/api/owner/bookings", ownerBookingRoutes);
+app.use("/api/owner", ownerBookingRoutes);
 
 // Guests
 app.use("/api/guests", guestRoutes);

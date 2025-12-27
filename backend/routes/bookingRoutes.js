@@ -20,6 +20,10 @@ router.post("/create-checkout", protectGuest, async (req, res) => {
             return res.status(400).json({ message: "Missing booking data" });
         }
 
+        if (!mongoose.Types.ObjectId.isValid(hotelId)) {
+            return res.status(400).json({ message: "Invalid hotel ID" });
+        }
+
         const hotel = await Hotel.findById(hotelId);
         if (!hotel) {
             return res.status(404).json({ message: "Hotel not found" });
@@ -32,7 +36,7 @@ router.post("/create-checkout", protectGuest, async (req, res) => {
             (end.getTime() - start.getTime()) /
             (1000 * 60 * 60 * 24);
 
-        if (nights <= 0) {
+        if (!Number.isInteger(nights) || nights <= 0) {
             return res.status(400).json({ message: "Invalid date range" });
         }
 
@@ -44,7 +48,9 @@ router.post("/create-checkout", protectGuest, async (req, res) => {
 
         const totalPrice = nights * hotel.pricePerNight;
 
-        // ✅ Create booking (pending payment)
+        /* ===============================
+           CREATE BOOKING (ACTIVE)
+        =============================== */
         const booking = await Booking.create({
             guestId: req.guest._id,
             hotel: hotel._id,
@@ -53,7 +59,7 @@ router.post("/create-checkout", protectGuest, async (req, res) => {
             nights,
             pricePerNight: hotel.pricePerNight,
             totalPrice,
-            status: "active",
+            status: "ACTIVE", // ✅ ENUM SAFE
             hotelSnapshot: {
                 name: hotel.name,
                 city: hotel.city,
@@ -62,6 +68,9 @@ router.post("/create-checkout", protectGuest, async (req, res) => {
             },
         });
 
+        /* ===============================
+           STRIPE CHECKOUT
+        =============================== */
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
             payment_method_types: ["card"],
@@ -69,7 +78,9 @@ router.post("/create-checkout", protectGuest, async (req, res) => {
                 {
                     price_data: {
                         currency: "usd",
-                        product_data: { name: hotel.name },
+                        product_data: {
+                            name: hotel.name,
+                        },
                         unit_amount: Math.round(totalPrice * 100),
                     },
                     quantity: 1,
@@ -82,6 +93,8 @@ router.post("/create-checkout", protectGuest, async (req, res) => {
         booking.stripeSessionId = session.id;
         await booking.save();
 
+        console.log("✅ BOOKING CREATED:", booking._id);
+
         res.json({ url: session.url });
     } catch (err) {
         console.error("CHECKOUT ERROR:", err);
@@ -89,64 +102,81 @@ router.post("/create-checkout", protectGuest, async (req, res) => {
     }
 });
 
-
 /* ======================================================
    GUEST: MY BOOKINGS
 ====================================================== */
 router.get("/my", protectGuest, async (req, res) => {
-    const bookings = await Booking.find({ guestId: req.guest._id })
-        .sort({ createdAt: -1 })
-        .populate("hotel");
+    try {
+        const bookings = await Booking.find({
+            guestId: req.guest._id,
+        })
+            .sort({ createdAt: -1 })
+            .populate("hotel");
 
-    res.json(bookings);
+        res.json(bookings);
+    } catch (err) {
+        console.error("MY BOOKINGS ERROR:", err);
+        res.status(500).json({ message: "Failed to load bookings" });
+    }
 });
 
 /* ======================================================
    GUEST: BOOKING DETAILS
 ====================================================== */
 router.get("/:id", protectGuest, async (req, res) => {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-        return res.status(400).json({ message: "Invalid booking ID" });
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid booking ID" });
+        }
+
+        const booking = await Booking.findOne({
+            _id: id,
+            guestId: req.guest._id,
+        }).populate("hotel");
+
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found" });
+        }
+
+        res.json(booking);
+    } catch (err) {
+        console.error("BOOKING DETAILS ERROR:", err);
+        res.status(500).json({ message: "Failed to load booking" });
     }
-
-    const booking = await Booking.findOne({
-        _id: req.params.id,
-        guestId: req.guest._id,
-    }).populate("hotel");
-
-    if (!booking) return res.status(404).json({ message: "Not found" });
-
-    res.json(booking);
 });
 
 /* ======================================================
-   GUEST: CANCEL + REFUND
+   GUEST: CANCEL BOOKING
 ====================================================== */
 router.put("/:id/cancel", protectGuest, async (req, res) => {
-    const booking = await Booking.findOne({
-        _id: req.params.id,
-        guestId: req.guest._id,
-    });
-
-    if (!booking) {
-        return res.status(404).json({ message: "Booking not found" });
-    }
-
-    if (booking.status === "cancelled") {
-        return res.json({ success: true });
-    }
-
-    // Refund if paid
-    if (booking.stripePaymentIntentId) {
-        await stripe.refunds.create({
-            payment_intent: booking.stripePaymentIntentId,
+    try {
+        const booking = await Booking.findOne({
+            _id: req.params.id,
+            guestId: req.guest._id,
         });
+
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found" });
+        }
+
+        if (booking.status === "CANCELLED") {
+            return res.json({ success: true });
+        }
+
+        booking.status = "CANCELLED"; // ✅ ENUM SAFE
+        await booking.save();
+
+        res.json({
+            success: true,
+            message: "Booking cancelled successfully",
+            booking,
+        });
+    } catch (err) {
+        console.error("CANCEL ERROR:", err);
+        res.status(500).json({ message: "Failed to cancel booking" });
     }
-
-    booking.status = "cancelled";
-    await booking.save();
-
-    res.json({ success: true, booking });
 });
 
 export default router;

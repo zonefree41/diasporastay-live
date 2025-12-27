@@ -3,6 +3,7 @@ import express from "express";
 import Booking from "../models/Booking.js";
 import { ownerAuth } from "../middleware/ownerAuth.js";
 import protectOwner from "../middleware/protectOwner.js";
+import Hotel from "../models/Hotel.js";
 
 
 const router = express.Router();
@@ -17,28 +18,38 @@ const router = express.Router();
    → Bookings for a specific hotel
 */
 
-// 🔹 Get ALL bookings for this owner
+/* ======================================================
+   OWNER: GET MY BOOKINGS
+====================================================== */
 router.get("/bookings", protectOwner, async (req, res) => {
     try {
-        // 1️⃣ Find owner's hotels
-        const hotels = await Hotel.find({ owner: req.owner._id }).select("_id");
+        // 1️⃣ Find hotels owned by this owner
+        const hotels = await Hotel.find(
+            { ownerId: req.owner._id },
+            "_id name"
+        );
 
         const hotelIds = hotels.map(h => h._id);
 
+        if (!hotelIds.length) {
+            return res.json([]);
+        }
+
         // 2️⃣ Find bookings for those hotels
         const bookings = await Booking.find({
-            hotel: { $in: hotelIds }
+            hotel: { $in: hotelIds },
         })
-            .populate("guestId", "email name")
-            .populate("hotel", "name city")
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .populate("hotel", "name city country images")
+            .populate("guestId", "name email");
 
         res.json(bookings);
     } catch (err) {
         console.error("OWNER BOOKINGS ERROR:", err);
-        res.status(500).json({ message: "Failed to load bookings" });
+        res.status(500).json({ message: "Failed to load owner bookings" });
     }
 });
+
 
 // 🔹 Get bookings for ONE hotel (by hotelId)
 router.get("/hotel/:hotelId", ownerAuth, async (req, res) => {
