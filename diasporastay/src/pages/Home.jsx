@@ -40,9 +40,6 @@ export default function Home() {
             {/* ================= HERO ================= */}
             <div className="home-hero text-center">
                 <h1>Find your perfect stay anywhere in Ethiopia</h1>
-                <p className="stripe-badge">
-                    🇪🇹 Ethiopia — Stripe-supported payouts for verified hosts
-                </p>
             </div>
 
             {/* ================= SEARCH ================= */}
@@ -66,6 +63,10 @@ export default function Home() {
                     </div>
                 </div>
             </div>
+
+            <p className="stripe-badge">
+                🇪🇹 Ethiopia — Stripe-supported payouts for verified hosts
+            </p>
 
             {/* ================= CITY CHIPS ================= */}
             <div className="container mt-3">
