@@ -1,6 +1,5 @@
 // src/App.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
-
 import DSNavbar from "./components/DSNavbar";
 import DSFooter from "./components/DSFooter";
 
@@ -235,6 +234,7 @@ function App() {
         <Route path="/admin/owners" element={<AdminOwners />} />
         <Route path="/admin/payouts" element={<AdminPayoutDashboard />} />
 
+
         {/* ========== FALLBACK (LAST!) ========== */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -243,5 +243,6 @@ function App() {
     </>
   );
 }
+
 
 export default App;

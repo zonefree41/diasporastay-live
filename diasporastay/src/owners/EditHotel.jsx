@@ -1,21 +1,15 @@
+// src/owners/EditHotel.jsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../axios";
+import RefundPolicySelector from "../components/RefundPolicySelector";
+
+
 
 /* ================= STYLES ================= */
 
 const page = { maxWidth: 1200, margin: "40px auto", padding: 20 };
 const title = { fontSize: 30, fontWeight: 800, marginBottom: 20 };
-
-const toggleWrap = { display: "flex", gap: 10, marginBottom: 20 };
-const toggleBtn = {
-    flex: 1,
-    padding: 10,
-    borderRadius: 10,
-    border: "none",
-    fontWeight: 700,
-    cursor: "pointer",
-};
 
 const layout = {
     display: "grid",
@@ -23,20 +17,15 @@ const layout = {
     gap: 30,
 };
 
-const form = { display: "flex", flexDirection: "column", gap: 24 };
-
 const section = {
     background: "#fff",
     borderRadius: 20,
     padding: 24,
     boxShadow: "0 8px 30px rgba(0,0,0,.06)",
+    marginBottom: 20,
 };
 
-const sectionTitle = {
-    fontSize: 18,
-    fontWeight: 700,
-    marginBottom: 16,
-};
+const sectionTitle = { fontSize: 18, fontWeight: 700, marginBottom: 14 };
 
 const input = {
     width: "100%",
@@ -88,47 +77,16 @@ const saveBtn = {
     cursor: "pointer",
 };
 
-const previewWrap = { position: "sticky", top: 20 };
-
-const explorePreviewWrap = { transition: "all .25s ease" };
-
-const exploreCard = {
+const previewCard = {
     background: "#fff",
     borderRadius: 16,
     overflow: "hidden",
     boxShadow: "0 10px 30px rgba(0,0,0,.12)",
 };
 
-const exploreImage = { width: "100%", height: 160, objectFit: "cover" };
-const exploreBody = { padding: 14 };
-const exploreLocation = { color: "#6b7280", fontSize: 13 };
-const exploreMin = { fontSize: 12, color: "#6b7280" };
-
-const ratingRow = { display: "flex", alignItems: "center", gap: 6 };
-const ratingStar = { color: "#f59e0b" };
-const ratingValue = { fontWeight: 700 };
-const ratingReviews = { fontSize: 12, color: "#6b7280" };
-
-const availabilityWrap = {
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 16,
-    background: "#f9fafb",
-};
-
-const availabilityGrid = {
-    display: "grid",
-    gridTemplateColumns: "repeat(7, 1fr)",
-    gap: 6,
-};
-
-const availabilityDay = {
-    padding: "8px 0",
-    borderRadius: 8,
-    fontSize: 11,
-    textAlign: "center",
-    fontWeight: 600,
-};
+const previewImage = { width: "100%", height: 180, objectFit: "cover" };
+const previewBody = { padding: 14 };
+const muted = { color: "#6b7280", fontSize: 13 };
 
 /* ================= COMPONENT ================= */
 
@@ -136,9 +94,9 @@ export default function EditHotel() {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const [previewMode, setPreviewMode] = useState("desktop");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
 
     const [name, setName] = useState("");
     const [city, setCity] = useState("");
@@ -147,16 +105,15 @@ export default function EditHotel() {
     const [pricePerNight, setPricePerNight] = useState("");
     const [minNights, setMinNights] = useState(2);
 
+    const [refundPolicy, setRefundPolicy] = useState("MODERATE_48H");
+
     const [existingImages, setExistingImages] = useState([]);
     const [newImages, setNewImages] = useState([]);
-    const [images, setImages] = useState([]);
-    const [error, setError] = useState(null);
 
+    /* ===== LOAD HOTEL ===== */
     useEffect(() => {
         const loadHotel = async () => {
             try {
-                setError(null);
-
                 const { data } = await api.get(`/api/owner/hotels/${id}`);
 
                 setName(data.name);
@@ -165,10 +122,11 @@ export default function EditHotel() {
                 setDescription(data.description || "");
                 setPricePerNight(data.pricePerNight);
                 setMinNights(data.minNights || 2);
+                setRefundPolicy(data.refundPolicy || "MODERATE_48H");
                 setExistingImages(data.images || []);
             } catch (err) {
-                console.error("LOAD HOTEL ERROR:", err);
-                setError("Unable to load hotel details.");
+                console.error(err);
+                setError("Unable to load hotel.");
             } finally {
                 setLoading(false);
             }
@@ -177,28 +135,7 @@ export default function EditHotel() {
         loadHotel();
     }, [id]);
 
-    const loadHotel = async () => {
-        try {
-            const token = localStorage.getItem("ownerToken");
-            const res = await fetch(`/api/owner/hotels/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
-
-            setName(data.name);
-            setCity(data.city);
-            setCountry(data.country);
-            setDescription(data.description || "");
-            setPricePerNight(data.pricePerNight);
-            setMinNights(data.minNights || 2);
-            setExistingImages(data.images || []);
-        } catch {
-            alert("Failed to load hotel");
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    /* ===== SAVE ===== */
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -209,16 +146,18 @@ export default function EditHotel() {
             formData.append("name", name);
             formData.append("city", city);
             formData.append("country", country);
+            formData.append("description", description);
             formData.append("pricePerNight", pricePerNight);
             formData.append("minNights", minNights);
-            formData.append("description", description);
+            formData.append("refundPolicy", refundPolicy);
 
-            // 👇 THIS IS THE CRITICAL PART
-            if (images && images.length > 0) {
-                for (const file of images) {
-                    formData.append("images", file);
-                }
-            }
+            existingImages.forEach((img) =>
+                formData.append("existingImages[]", img)
+            );
+
+            Array.from(newImages).forEach((file) =>
+                formData.append("images", file)
+            );
 
             await api.put(`/api/hotels/${id}`, formData);
 
@@ -226,58 +165,22 @@ export default function EditHotel() {
             navigate("/owner/my-hotels");
         } catch (err) {
             console.error(err);
-            alert(
-                err?.response?.data?.message || "Failed to update hotel"
-            );
+            alert("Failed to update hotel");
         } finally {
             setSaving(false);
         }
     };
 
-    if (loading) {
-        return <p style={{ padding: 40 }}>Loading hotel…</p>;
-    }
-
-    if (error) {
-        return (
-            <div style={{ padding: 40 }}>
-                <p style={{ color: "red", fontWeight: 600 }}>{error}</p>
-                <button onClick={() => navigate("/owner/my-hotels")}>
-                    Back to My Hotels
-                </button>
-            </div>
-        );
-    }
+    if (loading) return <p style={{ padding: 40 }}>Loading…</p>;
+    if (error) return <p style={{ padding: 40, color: "red" }}>{error}</p>;
 
     return (
         <div style={page}>
             <h1 style={title}>Edit Hotel</h1>
 
-            <div style={toggleWrap}>
-                <button
-                    onClick={() => setPreviewMode("desktop")}
-                    style={{
-                        ...toggleBtn,
-                        background: previewMode === "desktop" ? "#2563eb" : "#e5e7eb",
-                        color: previewMode === "desktop" ? "#fff" : "#111",
-                    }}
-                >
-                    🖥 Desktop
-                </button>
-                <button
-                    onClick={() => setPreviewMode("mobile")}
-                    style={{
-                        ...toggleBtn,
-                        background: previewMode === "mobile" ? "#2563eb" : "#e5e7eb",
-                        color: previewMode === "mobile" ? "#fff" : "#111",
-                    }}
-                >
-                    📱 Mobile
-                </button>
-            </div>
-
             <div style={layout}>
-                <form onSubmit={handleSubmit} style={form}>
+                {/* ===== FORM ===== */}
+                <form onSubmit={handleSubmit}>
                     <div style={section}>
                         <h3 style={sectionTitle}>Basic Info</h3>
                         <input style={input} value={name} onChange={(e) => setName(e.target.value)} />
@@ -285,6 +188,12 @@ export default function EditHotel() {
                             <input style={input} value={city} onChange={(e) => setCity(e.target.value)} />
                             <input style={input} value={country} onChange={(e) => setCountry(e.target.value)} />
                         </div>
+                        <textarea
+                            style={{ ...input, marginTop: 12 }}
+                            rows={4}
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                        />
                     </div>
 
                     <div style={section}>
@@ -292,6 +201,14 @@ export default function EditHotel() {
                         <div style={row}>
                             <input style={input} type="number" value={pricePerNight} onChange={(e) => setPricePerNight(e.target.value)} />
                             <input style={input} type="number" value={minNights} onChange={(e) => setMinNights(e.target.value)} />
+                        </div>
+
+                        <div style={{ marginTop: 14 }}>
+                            <strong>Refund policy</strong>
+                            <RefundPolicySelector
+                                value={refundPolicy}
+                                onChange={setRefundPolicy}
+                            />
                         </div>
                     </div>
 
@@ -301,17 +218,27 @@ export default function EditHotel() {
                             {existingImages.map((img) => (
                                 <div key={img} style={imageWrap}>
                                     <img src={img} style={image} />
-                                    <button type="button" style={removeBtn} onClick={() => setExistingImages(existingImages.filter((i) => i !== img))}>×</button>
+                                    <button
+                                        type="button"
+                                        style={removeBtn}
+                                        onClick={() =>
+                                            setExistingImages(existingImages.filter((i) => i !== img))
+                                        }
+                                    >
+                                        ×
+                                    </button>
                                 </div>
                             ))}
                         </div>
+
                         <label style={uploadBox}>
                             + Add photos
                             <input
                                 type="file"
                                 multiple
                                 accept="image/*"
-                                onChange={(e) => setImages(e.target.files)}
+                                hidden
+                                onChange={(e) => setNewImages(e.target.files)}
                             />
                         </label>
                     </div>
@@ -321,45 +248,23 @@ export default function EditHotel() {
                     </button>
                 </form>
 
-                <div style={previewWrap}>
-                    <div
-                        style={{
-                            ...explorePreviewWrap,
-                            width: previewMode === "mobile" ? 320 : "100%",
-                            margin: "0 auto",
-                        }}
-                    >
-                        <div style={exploreCard}>
-                            <img src={existingImages[0]} style={exploreImage} />
-                            <div style={exploreBody}>
-                                <div style={ratingRow}>
-                                    <span style={ratingStar}>★</span>
-                                    <span style={ratingValue}>4.8</span>
-                                    <span style={ratingReviews}>(32 reviews)</span>
-                                </div>
-                                <h4>{name}</h4>
-                                <p style={exploreLocation}>{city}, {country}</p>
-                                <strong>${pricePerNight}</strong> / night
-                                <p style={exploreMin}>Min {minNights} nights</p>
-                            </div>
+                {/* ===== PREVIEW ===== */}
+                <div>
+                    <div style={previewCard}>
+                        {existingImages[0] && (
+                            <img src={existingImages[0]} style={previewImage} />
+                        )}
+                        <div style={previewBody}>
+                            <h4>{name}</h4>
+                            <p style={muted}>{city}, {country}</p>
+                            <strong>${pricePerNight}</strong> / night
+                            <p style={muted}>Min {minNights} nights</p>
+                            <p style={muted}>
+                                {refundPolicy === "FLEXIBLE_24H" && "Free cancellation up to 24h"}
+                                {refundPolicy === "MODERATE_48H" && "Free cancellation up to 48h"}
+                                {refundPolicy === "NON_REFUNDABLE" && "Non-refundable"}
+                            </p>
                         </div>
-
-                        <div style={availabilityWrap}>
-                            <div style={availabilityGrid}>
-                                {Array.from({ length: 14 }).map((_, i) => (
-                                    <div
-                                        key={i}
-                                        style={{
-                                            ...availabilityDay,
-                                            background: i % 5 === 0 ? "#fee2e2" : "#dcfce7",
-                                        }}
-                                    >
-                                        {i % 5 === 0 ? "Blocked" : "Available"}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
                     </div>
                 </div>
             </div>

@@ -4,7 +4,7 @@ import {
     createOnboardingLink,
     checkStripeStatus,
 } from "../controllers/ownerStripeConnectController.js";
-import { protectOwner } from "../middleware/protectOwner.js";
+import protectOwner from "../middleware/protectOwner.js";
 
 const router = express.Router();
 

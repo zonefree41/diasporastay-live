@@ -52,8 +52,7 @@ export default function Hotel() {
                 );
 
                 if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(text || "Hotel not found");
+                    throw new Error("Hotel not found");
                 }
 
                 const data = await res.json();
@@ -66,21 +65,16 @@ export default function Hotel() {
         loadHotel();
     }, [id]);
 
-    console.log("HOTEL ID:", id);
-
-
     /* ======================
        LOAD AVAILABILITY
     ====================== */
     useEffect(() => {
         if (!hotel) return;
 
-        // ✅ blockedDates come directly from hotel document
         setBlockedDates(
             (hotel.blockedDates || []).map((d) => new Date(d))
         );
     }, [hotel]);
-
 
     /* ======================
        CALCULATE TOTAL
@@ -102,7 +96,7 @@ export default function Hotel() {
     }, [checkIn, checkOut, hotel]);
 
     /* ======================
-       AVAILABILITY CHECKS
+       AVAILABILITY
     ====================== */
     const isBlocked = (date) =>
         blockedDates.some((d) => isSameDay(d, date));
@@ -139,40 +133,54 @@ export default function Hotel() {
     };
 
     /* ======================
-       BOOKING
+       STRIPE RESERVE
     ====================== */
     const handleReserve = async () => {
         const token = localStorage.getItem("guestToken");
-        const guestId = localStorage.getItem("guestId");
 
-        if (!token || !guestId) {
+        if (!token) {
             navigate("/guest/login");
             return;
         }
 
-        if (!checkIn || !checkOut || nights <= 0) {
-            alert("Please select valid dates");
+        if (!checkIn || !checkOut) {
+            alert("Please select check-in and check-out dates");
             return;
         }
 
-        const res = await fetch("/api/bookings/create-checkout", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                hotelId: hotel._id,
-                guestId,
-                checkIn: checkIn.toISOString(),
-                checkOut: checkOut.toISOString(),
-                nights,
-                totalPrice: total,
-            }),
-        });
+        const diff =
+            (checkOut.getTime() - checkIn.getTime()) /
+            (1000 * 60 * 60 * 24);
+
+        if (diff <= 0) {
+            alert("Invalid date range");
+            return;
+        }
+
+        const res = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/bookings/create-checkout`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    hotelId: hotel._id,
+                    checkIn: checkIn.toISOString(),
+                    checkOut: checkOut.toISOString(),
+                }),
+            }
+        );
 
         const data = await res.json();
-        if (data.url) window.location.href = data.url;
+
+        if (!res.ok) {
+            alert(data.message || "Booking failed");
+            return;
+        }
+
+        window.location.href = data.url;
     };
 
     if (!hotel) return <p style={{ padding: 40 }}>Loading…</p>;
@@ -208,18 +216,15 @@ export default function Hotel() {
                     }}
                 >
                     {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                        <div key={`${d}-${i}`}>{d}</div>
+                        <div key={i}>{d}</div>
                     ))}
 
                     {days.map((date, i) => {
                         if (!date) return <div key={i} />;
 
-                        const disabled =
-                            date < today || isBlocked(date);
-
+                        const disabled = date < today || isBlocked(date);
                         const selected =
-                            isSameDay(date, checkIn) ||
-                            isSameDay(date, checkOut);
+                            isSameDay(date, checkIn) || isSameDay(date, checkOut);
 
                         return (
                             <div

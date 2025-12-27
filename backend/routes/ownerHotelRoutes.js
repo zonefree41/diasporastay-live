@@ -2,7 +2,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import Hotel from "../models/Hotel.js";
-import { protectOwner } from "../middleware/protectOwner.js";
+import protectOwner from "../middleware/protectOwner.js";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 

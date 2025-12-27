@@ -2,11 +2,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../axios";
-
+import RefundPolicySelector from "../components/RefundPolicySelector";
 
 export default function AddHotel() {
   const navigate = useNavigate();
 
+  // ✅ ALL HOOKS LIVE HERE — NOT ABOVE
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
@@ -15,11 +16,13 @@ export default function AddHotel() {
   const [description, setDescription] = useState("");
   const [images, setImages] = useState([]);
 
+  // ✅ REFUND POLICY HOOK IS HERE (FIXED)
+  const [refundPolicy, setRefundPolicy] = useState("MODERATE_48H");
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem("ownerToken");
       const formData = new FormData();
 
       formData.append("name", name);
@@ -28,17 +31,18 @@ export default function AddHotel() {
       formData.append("pricePerNight", pricePerNight);
       formData.append("minNights", minNights);
       formData.append("description", description);
+      formData.append("refundPolicy", refundPolicy);
 
       for (const file of images) {
         formData.append("images", file);
       }
 
       await api.post("/api/hotels", formData);
-      alert("Hotel added successfully");
 
+      alert("Hotel added successfully");
       navigate("/owner/my-hotels");
     } catch (err) {
-      console.error(err);
+      console.error("ADD HOTEL ERROR:", err);
       alert("Failed to add hotel");
     }
   };
@@ -74,9 +78,16 @@ export default function AddHotel() {
           onChange={(e) => setDescription(e.target.value)}
         />
 
+        {/* ✅ REFUND POLICY UI */}
+        <RefundPolicySelector
+          value={refundPolicy}
+          onChange={setRefundPolicy}
+        />
+
         <input
           type="file"
           multiple
+          accept="image/*"
           onChange={(e) => setImages(e.target.files)}
         />
 

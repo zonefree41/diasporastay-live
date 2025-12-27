@@ -2,6 +2,8 @@
 import express from "express";
 import Booking from "../models/Booking.js";
 import { ownerAuth } from "../middleware/ownerAuth.js";
+import protectOwner from "../middleware/protectOwner.js";
+
 
 const router = express.Router();
 
@@ -16,19 +18,25 @@ const router = express.Router();
 */
 
 // 🔹 Get ALL bookings for this owner
-router.get("/", ownerAuth, async (req, res) => {
+router.get("/bookings", protectOwner, async (req, res) => {
     try {
-        const ownerId = req.owner._id;
+        // 1️⃣ Find owner's hotels
+        const hotels = await Hotel.find({ owner: req.owner._id }).select("_id");
 
-        const bookings = await Booking.find({ ownerId })
-            .sort({ createdAt: -1 })
-            .populate("hotelId", "name city country")
-            .populate("guestId", "name email");
+        const hotelIds = hotels.map(h => h._id);
 
-        return res.json(bookings);
+        // 2️⃣ Find bookings for those hotels
+        const bookings = await Booking.find({
+            hotel: { $in: hotelIds }
+        })
+            .populate("guestId", "email name")
+            .populate("hotel", "name city")
+            .sort({ createdAt: -1 });
+
+        res.json(bookings);
     } catch (err) {
-        console.error("Owner bookings list error:", err);
-        return res.status(500).json({ error: "Failed to load bookings" });
+        console.error("OWNER BOOKINGS ERROR:", err);
+        res.status(500).json({ message: "Failed to load bookings" });
     }
 });
 

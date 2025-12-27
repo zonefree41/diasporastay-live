@@ -2646,3 +2646,19 @@ body {
     /* 👈 prevents stretching */
     display: block;
 }
+
+.ds-footer {
+    background: #0f172a;
+    /* deep navy */
+    color: #e5e7eb;
+}
+
+.ds-footer a {
+    color: #cbd5f5;
+    text-decoration: none;
+}
+
+.ds-footer a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}

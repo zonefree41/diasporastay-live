@@ -1,7 +1,7 @@
 // backend/middleware/protectAdmin.js
-
 import jwt from "jsonwebtoken";
 import User from "../models/User.js"; // ✅ DEFAULT IMPORT
+
 
 export const protectAdmin = async (req, res, next) => {
   let token;

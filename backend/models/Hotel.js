@@ -9,11 +9,17 @@ const hotelSchema = new mongoose.Schema({
     pricePerNight: Number,
     minNights: { type: Number, default: 2 },
     images: [String],
+    refundPolicy: {
+        type: String,
+        enum: ["FLEXIBLE_24H", "MODERATE_48H", "NON_REFUNDABLE"],
+        default: "MODERATE_48H",
+    },
 
     blockedDates: {
         type: [Date],
         default: [],
     },
 }, { timestamps: true });
+
 
 export default mongoose.model("Hotel", hotelSchema);

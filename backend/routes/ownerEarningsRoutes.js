@@ -2,7 +2,8 @@
 
 import express from "express";
 import ownerEarningsController from "../controllers/ownerEarningsController.js";
-import { protectOwner } from "../middleware/protectOwner.js";
+import protectOwner from "../middleware/protectOwner.js";
+
 
 const router = express.Router();
 

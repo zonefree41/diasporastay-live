@@ -1,6 +1,6 @@
 import express from "express";
 import Hotel from "../models/Hotel.js";
-import { protectOwner } from "../middleware/protectOwner.js";
+import protectOwner from "../middleware/protectOwner.js";
 import { upload } from "../config/cloudinary.js";
 import { v2 as cloudinary } from "cloudinary";
 

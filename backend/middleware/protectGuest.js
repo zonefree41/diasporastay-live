@@ -2,32 +2,30 @@
 import jwt from "jsonwebtoken";
 import Guest from "../models/Guest.js";
 
-export const protectGuest = async (req, res, next) => {
+const protectGuest = async (req, res, next) => {
     try {
-        let token;
+        const auth = req.headers.authorization;
 
-        if (
-            req.headers.authorization &&
-            req.headers.authorization.startsWith("Bearer")
-        ) {
-            token = req.headers.authorization.split(" ")[1];
-        }
-
-        if (!token) {
+        if (!auth || !auth.startsWith("Bearer ")) {
             return res.status(401).json({ message: "Not authorized" });
         }
 
+        const token = auth.split(" ")[1];
+
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        req.guest = await Guest.findById(decoded.guestId).select("-password");
+        const guest = await Guest.findById(decoded.guestId).select("-password");
 
-        if (!req.guest) {
+        if (!guest) {
             return res.status(401).json({ message: "Guest not found" });
         }
 
+        req.guest = guest;
         next();
     } catch (err) {
-        console.error("protectGuest error:", err);
-        res.status(401).json({ message: "Token failed" });
+        console.error("PROTECT GUEST ERROR:", err);
+        return res.status(401).json({ message: "Invalid token" });
     }
 };
+
+export default protectGuest;

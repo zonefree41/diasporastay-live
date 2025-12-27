@@ -21,7 +21,7 @@ export default function MyBookings() {
             try {
                 const { data } = await api.get("/api/bookings/my");
                 setItems(data);
-                console.log("BOOKING ITEM:", b);
+                console.log("BOOKINGS:", data);
             } catch (e) {
                 alert(e.message);
             } finally {

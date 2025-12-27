@@ -22,20 +22,23 @@ export default function MyBookings() {
                 <p>No bookings yet.</p>
             ) : (
                 <div className="list-group">
-                    {bookings.map((b) => (
-                        <div key={b._id} className="list-group-item mb-2">
-                            <h5>Hotel: {b.hotelName || b.hotelId}</h5>
+                    {bookings.map((booking) => (
+                        <div key={booking._id} className="list-group-item mb-2">
+                            <h5>Hotel: {booking.hotelName || booking.hotelId}</h5>
                             <p>
-                                <strong>Check-in:</strong> {new Date(b.checkIn).toDateString()}
+                                <strong>Check-in:</strong>{" "}
+                                {booking.checkIn ? new Date(booking.checkIn).toDateString() : "N/A"}
                             </p>
                             <p>
-                                <strong>Check-out:</strong> {new Date(b.checkOut).toDateString()}
+                                <strong>Check-out:</strong>{" "}
+                                {booking.checkOut ? new Date(booking.checkOut).toDateString() : "N/A"}
                             </p>
                             <p>
-                                <strong>Total Price:</strong> ${b.totalPrice}
+                                <strong>Total Price:</strong> ${booking.totalPrice ?? 0}
                             </p>
                         </div>
                     ))}
+
                 </div>
             )}
         </div>

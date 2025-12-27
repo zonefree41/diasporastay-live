@@ -1,7 +1,8 @@
-// src/pages/BookingDetails.jsx
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import api from "../axios";
+import CancelBookingModal from "../components/CancelBookingModal";
+import BookingChat from "../components/BookingChat";
 
 export default function BookingDetails() {
     const { id } = useParams();
@@ -9,201 +10,263 @@ export default function BookingDetails() {
 
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [busy, setBusy] = useState(false);
 
-    const token = localStorage.getItem("guestToken");
+    const [showCancel, setShowCancel] = useState(false);
+    const [cancelLoading, setCancelLoading] = useState(false);
 
-    /* ================= LOAD BOOKING ================= */
     useEffect(() => {
-        if (!token) {
-            navigate("/guest/login");
-            return;
-        }
-
-        let mounted = true;
-
         const load = async () => {
             try {
-                const res = await fetch(`/api/bookings/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-
-                const data = await res.json();
-                if (!res.ok) throw new Error(data?.message || "Failed to load booking");
-
-                if (mounted) {
-                    setBooking(data);
-                    console.log("BOOKING OBJECT:", data);
-                }
-            } catch (e) {
-                alert(e.message);
+                const { data } = await api.get(`/api/bookings/${id}`);
+                setBooking(data);
+            } catch {
+                alert("Unable to load booking details.");
                 navigate("/my-bookings");
             } finally {
-                if (mounted) setLoading(false);
+                setLoading(false);
             }
         };
 
         load();
-        return () => (mounted = false);
-    }, [id, token, navigate]);
+    }, [id, navigate]);
 
-    /* ================= CANCEL RULE ================= */
-    const canCancel = useMemo(() => {
-        if (!booking) return false;
-        if (booking.status === "CANCELLED") return false;
-
-        const checkIn = new Date(booking.checkIn).getTime();
-        return checkIn > Date.now();
-    }, [booking]);
-
-    /* ================= CANCEL HANDLER ================= */
-    const handleCancel = async () => {
-        if (!canCancel || busy) return;
-
-        const ok = window.confirm(
-            "Cancel this booking? This will free your blocked dates."
-        );
-        if (!ok) return;
-
-        setBusy(true);
-        try {
-            const { data } = await api.patch(
-                `/api/bookings/${id}/cancel`
-            );
-
-            // backend should return updated booking
-            setBooking(data.booking ?? data);
-            alert("Booking cancelled.");
-        } catch (e) {
-            console.error("Cancel error:", e);
-            alert(
-                e?.response?.data?.message ||
-                "Cancel failed. Please try again."
-            );
-        } finally {
-            setBusy(false);
-        }
-    };
-
-    /* ================= GUARDS ================= */
-    if (loading) return <p style={{ padding: 40 }}>Loading…</p>;
-    if (!booking) return <p style={{ padding: 40 }}>Booking not found</p>;
+    if (loading) return <p style={{ padding: 40 }}>Loading booking…</p>;
+    if (!booking) return null;
 
     const snap = booking.hotelSnapshot || {};
     const hero = snap.images?.[0];
+    const nights =
+        (new Date(booking.checkOut) - new Date(booking.checkIn)) /
+        (1000 * 60 * 60 * 24);
 
-    /* ================= RENDER ================= */
+    const handleCancel = async () => {
+        try {
+            setCancelLoading(true);
+            await api.put(`/api/bookings/cancel/${booking._id}`);
+            alert("Booking cancelled. Refund initiated.");
+            navigate("/my-bookings");
+        } catch (err) {
+            alert(err?.response?.data?.message || "Cancellation failed");
+        } finally {
+            setCancelLoading(false);
+            setShowCancel(false);
+        }
+    };
+
     return (
         <div style={page}>
-            <div style={topRow}>
-                <button onClick={() => navigate(-1)} style={backBtn}>
-                    ← Back
-                </button>
-                <Link to="/my-bookings" style={linkBtn}>
-                    My Bookings
-                </Link>
-            </div>
+            {/* HERO IMAGE */}
+            {hero && <img src={hero} alt="" style={heroImg} />}
 
-            <div style={card}>
-                {hero && <img src={hero} alt="hotel" style={heroImg} />}
-
-                <div style={{ padding: 18 }}>
-                    <h1 style={h1}>{snap.name || "Hotel"}</h1>
-                    <div style={muted}>
-                        {snap.city}, {snap.country}
-                    </div>
-
-                    <div style={grid}>
-                        <div style={box}>
-                            <div style={label}>Check-in</div>
-                            <div style={value}>
-                                {new Date(booking.checkIn).toLocaleDateString()}
-                            </div>
-                        </div>
-                        <div style={box}>
-                            <div style={label}>Check-out</div>
-                            <div style={value}>
-                                {new Date(booking.checkOut).toLocaleDateString()}
-                            </div>
-                        </div>
-                        <div style={box}>
-                            <div style={label}>Nights</div>
-                            <div style={value}>{booking.nights}</div>
-                        </div>
-                        <div style={box}>
-                            <div style={label}>Total</div>
-                            <div style={value}>
-                                ${Number(booking.totalPrice || 0).toFixed(2)}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={statusRow}>
-                        <span style={badge(booking.status)}>
-                            {booking.status}
-                        </span>
-                        <span style={subBadge}>{booking.paymentStatus}</span>
-                    </div>
-
-                    <div style={actions}>
-                        {booking.hotel?._id && (
-                            <Link to={`/hotels/${booking.hotel._id}`} style={primaryLink}>
-                                View Hotel
-                            </Link>
-                        )}
-                        <button
-                            onClick={handleCancel}
-                            disabled={!canCancel || busy}
-                            style={{
-                                ...dangerBtn,
-                                opacity: !canCancel || busy ? 0.55 : 1,
-                                cursor:
-                                    !canCancel || busy ? "not-allowed" : "pointer",
-                            }}
-                        >
-                            {busy ? "Cancelling…" : "Cancel Booking"}
-                        </button>
-                    </div>
-
-                    {!canCancel && booking.status !== "CANCELLED" && (
-                        <p style={hint}>
-                            Cancellation is only available before the check-in date.
-                        </p>
-                    )}
+            <div style={content}>
+                {/* HEADER */}
+                <div style={header}>
+                    <h1 style={title}>{snap.name || "Your stay"}</h1>
+                    <span style={badge(booking.status)}>
+                        {booking.status}
+                    </span>
                 </div>
+
+                <p style={muted}>
+                    {snap.city}, {snap.country}
+                </p>
+
+                {/* DATES */}
+                <div style={card}>
+                    <h3>📅 Your trip</h3>
+                    <p>
+                        <strong>Check-in:</strong>{" "}
+                        {new Date(booking.checkIn).toDateString()}
+                    </p>
+                    <p>
+                        <strong>Check-out:</strong>{" "}
+                        {new Date(booking.checkOut).toDateString()}
+                    </p>
+                    <p>
+                        <strong>Nights:</strong> {nights}
+                    </p>
+                </div>
+
+                {/* PRICE */}
+                <div style={card}>
+                    <h3>💳 Price details</h3>
+                    <p>
+                        ${Number(booking.pricePerNight).toFixed(2)} × {nights} nights
+                    </p>
+                    <hr />
+                    <p style={{ fontWeight: 900 }}>
+                        Total: ${Number(booking.totalPrice).toFixed(2)}
+                    </p>
+                </div>
+
+                {/* ACTIONS */}
+                <div style={actions}>
+                    {booking.hotel && (
+                        <button
+                            style={primaryBtn}
+                            onClick={() => navigate(`/hotels/${booking.hotel._id}`)}
+                        >
+                            View Hotel
+                        </button>
+                    )}
+
+                    <button
+                        style={secondaryBtn}
+                        onClick={() => navigate("/my-bookings")}
+                    >
+                        Back to bookings
+                    </button>
+
+                    {booking.status !== "CANCELLED" && (
+                        <button
+                            style={{
+                                ...secondaryBtn,
+                                background: "#fee2e2",
+                                color: "#991b1b",
+                                border: "1px solid #fecaca",
+                            }}
+                            onClick={() => setShowCancel(true)}
+                        >
+                            Cancel Booking
+                        </button>
+                    )}
+
+                    <button
+                        style={primaryBtn}
+                        onClick={() => {
+                            const email =
+                                booking.ownerEmail || "support@diasporastay.com";
+                            window.location.href = `mailto:${email}?subject=Booking ${booking._id}`;
+                        }}
+                    >
+                        Message Host
+                    </button>
+
+                    <button
+                        style={primaryBtn}
+                        onClick={() => navigate(`/messages/${booking._id}`)}
+                    >
+                        Message Host
+                    </button>
+
+                </div>
+
+                <BookingChat
+                    bookingId={booking._id}
+                    role="guest"
+                    senderId={booking.guestId}
+                />
+
+                {booking.refundStatus && (
+                    <div style={{ marginTop: 10, fontSize: 13, color: "#16a34a" }}>
+                        💳 Refund status: {booking.refundStatus}
+                    </div>
+                )}
             </div>
+
+            {/* CANCEL MODAL */}
+            {showCancel && (
+                <CancelBookingModal
+                    booking={booking}
+                    loading={cancelLoading}
+                    onClose={() => setShowCancel(false)}
+                    onConfirm={handleCancel}
+                />
+            )}
         </div>
     );
 }
 
-/* styles */
-const page = { maxWidth: 900, margin: "40px auto", padding: 16 };
-const topRow = { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 };
-const backBtn = { border: "1px solid #e5e7eb", borderRadius: 12, padding: "10px 12px", background: "#fff", cursor: "pointer", fontWeight: 700 };
-const linkBtn = { textDecoration: "none", border: "1px solid #e5e7eb", borderRadius: 12, padding: "10px 12px", background: "#fff", fontWeight: 700, color: "#111827" };
+/* ================= STYLES ================= */
 
-const card = { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 18, overflow: "hidden", boxShadow: "0 12px 30px rgba(0,0,0,.08)" };
-const heroImg = { width: "100%", height: 280, objectFit: "cover" };
-const h1 = { fontSize: 26, fontWeight: 900, margin: 0 };
-const muted = { color: "#6b7280", marginTop: 6 };
+const page = {
+    maxWidth: 900,
+    margin: "30px auto",
+    padding: 16,
+};
 
-const grid = { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginTop: 16 };
-const box = { border: "1px solid #e5e7eb", borderRadius: 14, padding: 12, background: "#f9fafb" };
-const label = { fontSize: 12, color: "#6b7280", fontWeight: 700 };
-const value = { fontSize: 16, fontWeight: 900, marginTop: 4 };
+const heroImg = {
+    width: "100%",
+    height: 320,
+    objectFit: "cover",
+    borderRadius: 22,
+};
 
-const statusRow = { display: "flex", gap: 10, alignItems: "center", marginTop: 14 };
-const subBadge = { fontSize: 12, padding: "6px 10px", borderRadius: 999, background: "#f3f4f6", fontWeight: 800, color: "#374151" };
+const content = {
+    marginTop: 24,
+};
+
+const header = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+};
+
+const title = {
+    margin: 0,
+    fontSize: 28,
+    fontWeight: 900,
+};
+
+const muted = {
+    color: "#6b7280",
+    marginTop: 4,
+};
+
+const card = {
+    marginTop: 18,
+    padding: 18,
+    borderRadius: 18,
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    boxShadow: "0 10px 24px rgba(0,0,0,.06)",
+};
+
+const actions = {
+    marginTop: 24,
+    display: "flex",
+    gap: 12,
+    flexWrap: "wrap",
+};
+
+const primaryBtn = {
+    flex: 1,
+    background: "#2563eb",
+    color: "#fff",
+    border: "none",
+    padding: "14px 16px",
+    borderRadius: 14,
+    fontWeight: 900,
+    cursor: "pointer",
+};
+
+const secondaryBtn = {
+    flex: 1,
+    background: "#f3f4f6",
+    color: "#111827",
+    border: "1px solid #e5e7eb",
+    padding: "14px 16px",
+    borderRadius: 14,
+    fontWeight: 900,
+    cursor: "pointer",
+};
+
 const badge = (s) => ({
     fontSize: 12,
-    padding: "6px 10px",
+    padding: "6px 12px",
     borderRadius: 999,
     fontWeight: 900,
-    background: s === "CANCELLED" ? "#fee2e2" : s === "CONFIRMED" ? "#dcfce7" : "#e0e7ff",
-    color: s === "CANCELLED" ? "#991b1b" : s === "CONFIRMED" ? "#166534" : "#1e40af",
+    background:
+        s === "CANCELLED"
+            ? "#fee2e2"
+            : s === "CONFIRMED"
+                ? "#dcfce7"
+                : "#e0e7ff",
+    color:
+        s === "CANCELLED"
+            ? "#991b1b"
+            : s === "CONFIRMED"
+                ? "#166534"
+                : "#1e40af",
 });
-
-const actions = { display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" };
-const primaryLink = { textDecoration: "none", background: "#2563eb", color: "#fff", fontWeight: 900, padding: "12px 14px", borderRadius: 14 };
-const dangerBtn = { border: "1px solid #ef4444", background: "#fff", color: "#b91c1c", fontWeight: 900, padding: "12px 14px", borderRadius: 14 };
-const hint = { marginTop: 12, color: "#6b7280", fontSize: 13 };

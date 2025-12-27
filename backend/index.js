@@ -27,6 +27,8 @@ import ownerEarningsRoutes from "./routes/ownerEarningsRoutes.js";
 import ownerPayoutHistoryRoutes from "./routes/ownerPayoutHistoryRoutes.js";
 import ownerPayoutInfoRoutes from "./routes/ownerPayoutInfoRoutes.js";
 
+import messageRoutes from "./routes/messageRoutes.js";
+
 import guestRoutes from "./routes/guestRoutes.js";
 import guestAuthRoutes from "./routes/guestAuthRoutes.js";
 
@@ -51,6 +53,9 @@ console.log(
     "ENV STRIPE KEY =",
     process.env.STRIPE_SECRET_KEY?.slice(0, 12) + "..."
 );
+
+import { EventEmitter } from "events";
+EventEmitter.defaultMaxListeners = 20;
 
 
 app.use((req, res, next) => {
@@ -321,6 +326,10 @@ app.use("/api/admin/payouts", adminPayoutRoutes);
 
 // Seed
 app.use("/api/seed-bookings", seedBookings);
+
+// message 
+app.use("/api/messages", messageRoutes);
+
 
 /* =========================
    ERROR HANDLER

@@ -1,6 +1,6 @@
 import express from "express";
 import { getOwnerPayoutHistory } from "../controllers/ownerPayoutHistoryController.js";
-import { protectOwner } from "../middleware/protectOwner.js";
+import protectOwner from "../middleware/protectOwner.js";
 
 const router = express.Router();
 
